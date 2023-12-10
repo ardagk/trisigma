@@ -1,0 +1,76 @@
+.activity-grid {
+    display: grid;
+    position: relative;
+    height: 100%;
+    grid-template-columns: 1fr 1.2fr;
+    grid-template-rows: 1.2fr 1fr;
+    gap: var(--panel-gap);
+    grid-auto-flow: row;
+    grid-template-areas:
+      "upperright upperleft"
+      "bottom bottom";
+}
+
+.activity-observations-wrapper {
+  /*flex*/
+  display: flex;
+  flex-flow: column;
+  height: 100%;
+  width: 100%;
+  align-items: flex-start;
+  overflow: hidden;
+}
+
+.activity-options-wrapper {
+  height: 100%;
+  display: flex;
+  flex-flow: row wrap;
+  align-content: center;
+  align-items: flex-end;
+  justify-content: flex-end;
+}
+
+.activity-options-strategy-selector-wrapper {
+  align-self: stretch;
+  align-content: center;
+  height: 100%;
+}
+
+.activity-options-account-selector-wrapper {
+  height: 100%;
+  align-self: stretch;
+  align-content: center;
+}
+
+.activity-options-strategy-selector {
+  background-color: var(--view-button-background-color);
+  color: var(--view-button-font-color);
+  height: 100%;
+}
+
+
+.activity-options-account-selector {
+  background-color: var(--view-button-background-color);
+  color: var(--view-button-font-color);
+  height: 100%;
+}
+
+.activity-observations-chart-wrapper {
+  height: 100%;
+  width: 100%;
+}
+
+.activity-journal-table-wrapper {
+  height: 100%;
+  width: 100%;
+}
+
+.activity-transactions-wrapper {
+  width: 100%;
+  height: 100%;
+}
+
+.activity-transactions-table-wrapper {
+  width: 100%;
+  height: 100%;
+}

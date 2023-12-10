@@ -1,0 +1,45 @@
+:root {
+    /* background colors */
+    --background-color-a: rgba(23,23,21,1);
+    --background-color-a-light: rgba(25,25,25,1);
+    --background-color-a-dark: rgba(21,21,21,1);
+    --background-color-b: rgba(19, 86, 67);
+    /* menu colors */
+    --nav-button-color: rgba(44,64,54,1);
+    --nav-item-font-color: rgba(193, 191, 184 ,1);
+
+    /* font colors */    
+    --font-color-a: rgba(193, 191, 184 ,1);
+    --font-color-a-light: rgba(193, 191, 184 ,1);
+    --font-color-a-dark: rgba(193, 191, 184 ,1);
+
+    /* view input colors */
+    --view-button-font-color: rgba(193,191,184,1);
+    --view-button-background-color: rgba(23, 23, 21 ,1);
+    --view-button-border-color: rgba(33, 33, 31 ,1);
+    --view-button-border-size: 2px;
+
+    /* tab colors */
+    --tab-bar-color: rgba(17,17,17,1);
+    --panel-color: rgba(33,33,31,1);
+    --border-color:gray;
+    --panel-gap: 10px;
+    --view-gap: 5px;
+    --tab-bar-size: 3vh;
+
+    /* line chart colors */
+    --line-chart-background-color: rgba(23,23,21,1);
+    --line-chart-border-color: rgba(100,100,100,1);
+    --line-chart-font-color: rgba(255,255,255,1);
+
+    /* table colors */
+    --table-background-color: rgba(33,33,33,1);
+    --table-cell-border-color: var(--background-color-a-light);
+    --table-border-color: var(--background-color-a-dark);
+    --table-default-font-color: rgba(170,170,170,1);
+    --table-positive-font-color: rgba(20,215,20,1);
+    --table-negative-font-color: rgba(215,20,20,1);
+    --table-border-size: 5px;
+    --table-cell-border-size: 2px;
+    
+}

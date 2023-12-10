@@ -1,0 +1,17 @@
+{
+    "get_position": [
+            [{"endpoint": "get_position", "params": {"asset": "SPY"}}, {"status": "ok", "message": 100}],
+            [{"endpoint": "get_position", "params": {"asset": "USD"}}, {"status": "ok", "message": 1000.123}],
+            [{"endpoint": "get_position", "params": {"asset": "AAPL"}}, {"status": "ok", "message": 200}],
+            [{"endpoint": "get_position", "params": {"asset": "WRONG"}}, {"status": "ok", "message": 100}],
+            [{"endpoint": "get_position", "params": {"asset": "AAPL", "wrongparam": "hey"}}, {"status": "error", "message": "N/A"}],
+            [{"endpoint": "get_position", "params": {"asset": "WRONG", "wrongparam": "hey"}}, {"status": "error", "message": "N/A"}],
+            [{"endpoint": "get_position", "params": {"wrongparam": "hey"}}, {"status": "error", "message": "N/A"}]
+    ],
+    "place_order": [
+            [{"endpoint": "get_position", "params": {"instrument": "stock:SPY:USD", "side": "BUY", "qty": 100, "order_type": "MARKET"}}, {"status": "ok", "message": "123456"}],
+            [{"endpoint": "get_position", "params": {"instrument": "stock:AAPL:USD", "side": "SELL", "qty": 200, "order_type": "MARKET"}}, {"status": "ok", "message": "123456"}],
+            [{"endpoint": "get_position", "params": {"instrument": "stock:SPY:USD", "qty": 100, "order_type": "MARKET"}}, {"status": "ok", "message": "123456"}],
+            [{"endpoint": "get_position", "params": {"instrument": "stock:SPY:USD", "side": "BUY", "order_type": "MARKET"}}, {"status": "ok", "message": "123456"}]
+    ]
+}

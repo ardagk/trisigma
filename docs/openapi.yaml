@@ -1,0 +1,232 @@
+
+openapi: 3.0.0
+info:
+  title: RespAPI Specification
+  version: 1.0.0
+paths:
+  /portfolio/allocation:
+    get:
+      summary: Get portfolio strategy allocation.
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+                first_strategy:
+                  strategy: "SMA2?asset=SPY&ncandle=2"
+                  allocation: 0.3
+                other_strategy:
+                  strategy: "EPA?asset=SPY&traillingstop=3"
+                  allocation: 0.7
+    post:
+      summary: Set portfolio strategy allocation.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example:
+              first_strategy:
+                strategy: "SMA2?asset=SPY&ncandle=2"
+                allocation: 0.3
+              other_strategy:
+                strategy: "EPA?asset=SPY&traillingstop=3"
+                allocation: 0.7
+      responses:
+        '200':
+          description: Successful response
+
+  /strategy/definition:
+    get:
+      summary: Get information on the available strategies, including their description and parameters.
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+                - name: "EPA"
+                  description: "Estimated Price Action strategy."
+                  parameters:
+                    traillingstop:
+                      type: "range"
+                      min: 1
+                      max: 2
+                    asset:
+                      type: "$asset"
+
+  /portfolio/position:
+    get:
+      summary: Get portfolio positions
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+                AAPL:
+                  shares: 2
+                  value: 340
+                SPY:
+                  shares: 1
+                  value: 430
+
+  /portfolio/returnchart:
+    get:
+      summary: Get a comparison of portfolio and benchmark returns.
+      parameters:
+        - name: range
+          description: The timespan of returns. ("1w", \"4w", \"12w", \"SE")
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+                portfolio:
+                  - 0.1
+                  - 0.2
+                  - 0.1
+                benchmark:
+                  - 0.1
+                  - 0.2
+                  - 0.1
+                time:
+                  - 1700438400.0
+                  - 1700438100.0
+                  - 1700437800.0
+                benchmarkName: "S&P500"
+
+  /portfolio/keystats:
+    get:
+      summary: Get portfolio key statistics of portfolio.
+      parameters:
+        - name: range
+          description: The timespan of returns. ("1w", \"4w", \"12w", \"SE")
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+                - title: "Total transactions long"
+                  value: "5"
+                - title: "Total transactions short"
+                  value: "3"
+
+  /portfolio/transactions:
+    get:
+      summary: Get the past transactions of a specific bot.
+      parameters:
+        - name: instanceId
+          description: The uuid of the bot.
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: days
+          description: The number of past days to return (max. 100)
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+                - time: 1700438400.0
+                  asset: "AAPL"
+                  side: "BUY"
+                  qty: 5
+                  order_type: "MARKET"
+
+  /portfolio/openorders:
+    get:
+      summary: Get open orders of a specific bot.
+      parameters:
+        - name: instanceId
+          description: The uuid of the bot.
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+                - time: 1700438400.0
+                  asset: "AAPL"
+                  side: "BUY"
+                  qty: 5
+
+  /portfolio/journal:
+    get:
+      summary: Get the a collection of human-readable logs emmitted a specific bot.
+      parameters:
+        - name: instance_id
+          description: The uuid of the bot.
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+                - time: 1700438400.0
+                  comment: "hello world"
+
+  /portfolio/observations:
+    get:
+      summary: Get plottable values calculated by a bot during it's lifetime.
+      parameters:
+        - name: instance_id
+          description: The uuid of the bot.
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: days
+          description: Number of past days that will be returned.
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+                - time: 1700438400.0
+                  price: 150
+                  RSA: 20
+
+  /portfolio/bots:
+    get:
+      summary: Get all the bots associated with this portfolio.
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+                - given_name: "first strategy"
+                  account_id: 13200
+                  account_name: "myAccount"
+                  instance_id: 123456
+                  strategy: "SMA2?asset"

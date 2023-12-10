@@ -1,0 +1,6 @@
+__pycache__/
+trisigma.egg-info/
+dist/
+build/
+did.bin
+pyrightconfig.json

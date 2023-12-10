@@ -1,3 +1,4 @@
+exit
 TOKEN=$1
 echo $TOKEN | docker login ghcr.io -u USERNAME --password-stdin
 docker build . -t trisagent

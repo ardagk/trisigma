@@ -6,6 +6,64 @@ from trisigma.domain.market import Instrument
 from pymongo import MongoClient
 import datetime
 import os
+from copy import deepcopy
+from datetime import datetime
+import pandas as pd
+import numpy as np
+
+
+def generate_trade_data(start, end, asset, prices, qty, duration, meta={}):
+    size = int((end - start).total_seconds() // duration)
+    rng = np.random.RandomState(1)
+    noise = rng.rand(size) * 0.3 + 1
+    start_price, end_price = prices
+    buy = True
+    orders = []
+    observations = []
+    comments = []
+    words = ['foo bar eggs', 'Zzzzzzzzz', 'Lorem impus', 'dolor sit amet']
+    for i in range(size):
+        time = start.timestamp() + i * duration
+        price = start_price + (end_price - start_price) \
+            * (time - start.timestamp()) \
+            / (end.timestamp() - start.timestamp()) \
+            * float(noise[i])
+
+        orders.append({'instrument': asset,
+                        'side': 'BUY' if buy else 'SELL',
+                        'time': time,
+                        'qty': qty,
+                        'order_type': 'MARKET',
+                        'order_status': 'FILLED',
+                        'price': round(price,2),
+                        'meta': meta.copy(),
+                        'tif': None})
+        if i % 3 == 0:
+            comments.append({'time': time, 'comment': rng.choice(words, 1)[0]})
+        observations.append({'time': time, 'observations':{'price': price}})
+        buy = not buy
+    return orders, observations, comments
+
+
+def generate_positions(orders, start, end, init_balance, record_duration):
+    positions = []
+    balance = init_balance
+    next_time = (start.timestamp() // record_duration + 1) * record_duration
+    i = 0
+    cur_position = {}
+    for order in orders:
+        if order['time'] > next_time:
+            positions.append({'time': next_time, 'position': deepcopy(cur_position)})
+            next_time = (next_time // record_duration + 1) * record_duration
+        if order['instrument'] not in cur_position:
+            cur_position[order['instrument']] = {'qty': 0, 'value': 0}
+        sign = 1 if order['side'] == 'BUY' else -1
+        cur_position[order['instrument']]['qty'] += order['qty'] * sign
+        cur_position[order['instrument']]['value'] = cur_position[order['instrument']]['qty'] * order['price']
+        balance -= order['qty'] * order['price'] * sign
+        cur_position['USD'] = {'qty': balance, 'value': balance}
+    return positions
+
 
 """
 collections:
@@ -32,13 +90,22 @@ class Seed():
         return hex(int(("1" + "0"*31), 16) + s)[2:]
 
 seed = Seed()
-DB_NAME = "trisigma_test"
+DB_NAME = "trisigma_test2"
 MONGO_URI = os.getenv("MONGO_URI"); assert MONGO_URI
 
 client = MongoClient(MONGO_URI)
 client.drop_database(DB_NAME)
+
+buffer = {}
 def _insert(collection, data):
-    client[DB_NAME][collection].insert_one(data)
+    buffer.setdefault(collection, []).append(data)
+
+def _flush():
+    print('# collections:', len(buffer.keys()))
+    for collection, data in buffer.items():
+        print('inserting', collection)
+        client[DB_NAME][collection].insert_many(data)
+    buffer.clear()
 
 def push_trader(
     account_id, strategy_uri, start_time, trader_id, meta=None):
@@ -82,7 +149,7 @@ def push_strategy_allocation_naming(portfolio_manager_id, naming, meta=None):
 def push_exposure_table(account_id, exposure_table):
     _insert("exposure_table", {
         'account_id': account_id,
-        'exposure_table': modelfactory.deconstruct(exposure_table)}
+        'exposure_table': modelfactory.deconstruct(exposure_table)})
 
 def push_strategydef(name, version, options, meta=None):
     o = StrategyDefinition(
@@ -122,13 +189,12 @@ def push_trader_observation(trader_id, observation):
 def push_trader_comment(trader_id, comment):
     _insert("trader_comments", {'trader_id': trader_id, 'comment': comment})
 
+
 def main():
+    acc_scl = [10, 50, 100]
     ST1 = to_strategy_uri('strategy1', {'asset':'AAPL', 'ncandle': 3})
     ST2 = to_strategy_uri('strategy2', {'asset':'SPY', 'letter': 'A'})
     ST3 = to_strategy_uri('strategy3', {'asset':'TSLA', 'ncandle': 0.3})
-    T1 = datetime.datetime(2023, 2, 11, 17, 45, 30, 123).timestamp()
-    T2 = datetime.datetime(2023, 11, 29, 12, 15, 13, 123).timestamp()
-    T3 = datetime.datetime(2023, 11, 29, 12, 15, 14, 123).timestamp()
 
     push_strategydef("strategy1", "v1", {'asset': {'type': '$asset'}, 'ncandle': {'type': 'rangeint', 'min': 1, 'max': 15}})
     push_strategydef("strategy2", "v1.1", {'asset': {'type': '$asset'}, 'letter': {'type': 'dropdown', 'options': ['A', 'B', 'C']}})
@@ -142,129 +208,113 @@ def main():
     push_strategy_allocation(seed.pm_id(1), {ST1: 0.5, ST2: 0.3, ST3: 0.1})
     push_strategy_allocation_naming(seed.pm_id(1), {ST1: "first strategy", ST2: "second strategy", ST3: "third strategy"})
 
-    acc_scl = [100, 1000, 10000]
     ppos = {str(seed.account_id(i-1)): {'AAPL': 1*acc_scl[i], 'SPY': -1*acc_scl[i], 'USD': 100*acc_scl[i]} for i in range(3)}
     push_portfolio_pos(seed.pm_id(1), ppos)
 
+    start = datetime(2023, 12, 1)
+    end = datetime.now()
+    T2 = start.timestamp()
     for i in range(1, 4):
         exposure_table = ExposureTable(
                 {ST1:Exposure(alloc={'AAPL': 0.3}, buffer={}),
                  ST2:Exposure(alloc={'SPY': -1}, buffer={}),
                  ST3:Exposure(alloc={'TESLA': 1}, buffer={})},
-                {ST1: 0.5, ST2, 0.3, ST3: 0.1})
+                {ST1: 0.5, ST2: 0.3, ST3: 0.1})
         push_exposure_table(account_id=seed.account_id(i), exposure_table=exposure_table)
 
         push_trader(seed.account_id(i), ST1, T2, seed.trader_id(1 + (i-1)*3))
         push_trader(seed.account_id(i), ST2, T2, seed.trader_id(2 + (i-1)*3))
         push_trader(seed.account_id(i), ST3, T2, seed.trader_id(3 + (i-1)*3))
 
-        scl = acc_scl[i-1]
-        meta = {'trader_id': seed.trader_id(1 + (i-1)*3)}
-        push_order(Instrument.stock('AAPL', 'USD'), "BUY", 2*scl, "MARKET", account_id=seed.account_id(i), t=T3-86400+100, meta=meta)
-        push_order(Instrument.stock('AAPL', 'USD'), "SELL", 1*scl, "MARKET", account_id=seed.account_id(i), t=T3-86400+200, meta=meta)
-        push_order(Instrument.stock('AAPL', 'USD'), "BUY", 1*scl, "MARKET", account_id=seed.account_id(i), t=T3-86400+300, meta=meta)
-        push_order(Instrument.stock('AAPL', 'USD'), "SELL", 1*scl, "MARKET", account_id=seed.account_id(i), t=T3-86400+400, meta=meta)
+        #Strategy 1
+        duration = 60*7
+        record_duration = 600
+        init_balance = 500 * acc_scl[i+1]
+        trader_id = seed.trader_id(1 + (i-1)*3)
+        qty = acc_scl[i-1]
+        meta = {'trader_id': trader_id}
+        orders1, obs1, comm1 = generate_trade_data(start, end, 'AAPL', (100,200), qty, duration, meta)
+        orders2, obs2, comm2 = generate_trade_data(start, end, 'SPY', (300,400), qty, duration, meta)
+        orders = (orders1 + orders2)
+        orders.sort(key=lambda x: x['time'])
+        for order in orders:
+            push_order(Instrument.stock(order['instrument'], 'USD'), order['side'],
+                order['qty'], order['order_type'], account_id=seed.account_id(i),
+                t=order['time'], meta=order['meta'])
+        observations = (obs1 + obs2)
+        observations.sort(key=lambda x: x['time'])
+        for obs in observations:
+            push_trader_observation(trader_id, deepcopy(obs))
+        comments = (comm1 + comm2)
+        comments.sort(key=lambda x: x['time'])
+        for comm in comments:
+            push_trader_comment(trader_id, deepcopy(comm))
+        
+        positions = generate_positions(orders, start, end, init_balance, record_duration)
+        for pos in positions:
+            spos = {str(seed.account_id(i-1)): deepcopy(pos['position'])}
+            push_portfolio_snapshot(seed.pm_id(1), pos['time'], spos)
 
-        meta = {'trader_id': seed.trader_id(2 + (i-1)*3)}
-        push_order(Instrument.stock('SPY', 'USD'), "SELL", 1*scl, "MARKET", account_id=seed.account_id(i), t=T3-86400+130, meta=meta)
-        push_order(Instrument.stock('SPY', 'USD'), "BUY", 2*scl, "MARKET", account_id=seed.account_id(i), t=T3-86400+230, meta=meta)
-        push_order(Instrument.stock('SPY', 'USD'), "SELL", 2*scl, "MARKET", account_id=seed.account_id(i), t=T3-86400+330, meta=meta)
+        #Strategy 2
+        duration = 60*8
+        trader_id = seed.trader_id(2 + (i-1)*3)
+        init_balance = 500 * acc_scl[i+1]
+        qty = acc_scl[i-1]
+        meta = {'trader_id': trader_id}
+        orders1, obs1, comm1 = generate_trade_data(start, end, 'AAPL', (100,200), qty, duration, meta)
+        orders2, obs2, comm2 = generate_trade_data(start, end, 'MSFT', (200,300), qty, duration, meta)
+        orders = (orders1 + orders2)
+        orders.sort(key=lambda x: x['time'])
+        for order in orders:
+            push_order(Instrument.stock(order['instrument'], 'USD'), order['side'],
+                order['qty'], order['order_type'], account_id=seed.account_id(i),
+                t=order['time'], meta=order['meta'])
+        observations = (obs1 + obs2)
+        observations.sort(key=lambda x: x['time'])
+        for obs in observations:
+            push_trader_observation(trader_id, deepcopy(obs))
+        comments = (comm1 + comm2)
+        comments.sort(key=lambda x: x['time'])
+        for comm in comments:
+            push_trader_comment(trader_id, deepcopy(comm))
+        
+        positions = generate_positions(orders, start, end, init_balance, record_duration)
+        for pos in positions:
+            spos = {str(seed.account_id(i-1)): deepcopy(pos['position'])}
+            push_portfolio_snapshot(seed.pm_id(1), pos['time'], spos)
 
-        meta = {'trader_id': seed.trader_id(3 + (i-1)*3)}
-        push_order(Instrument.stock('TSLA', 'USD'), "SELL", 1*scl, "MARKET", account_id=seed.account_id(i), t=T3-86400+120, meta=meta)
-        push_order(Instrument.stock('TSLA', 'USD'), "BUY", 1*scl, "LIMIT", price=300, account_id=seed.account_id(i), t=T3-86400+220, meta=meta)
-        push_order(Instrument.stock('TSLA', 'USD'), "BUY", 1*scl, "LIMIT", price=310, account_id=seed.account_id(i), t=T3-86400+320, meta=meta)
-        push_order(Instrument.stock('TSLA', 'USD'), "SELL", 1*scl, "LIMIT", price=308, account_id=seed.account_id(i), t=T3-86400+420, meta=meta)
-        push_order(Instrument.stock('TSLA', 'USD'), "SELL", 1*scl, "LIMIT", price=308,
-                   order_status=order_status.SUBMITTED, account_id=seed.account_id(i), t=T3-86400+230, meta=meta)
-
-
-        obs1 = {'time': T3 - 86400+103, 'observation': {'price?asset=AAPL': 100.15, 'SMA?asset=AAPL&n=20': 104}}
-        obs2 = {'time': T3 - 86400+113, 'observation': {'price?asset=AAPL': 101.80, 'SMA?asset=AAPL&n=20': 104.11}}
-        obs3 = {'time': T3 - 86400+123, 'observation': {'price?asset=AAPL': 100.78, 'SMA?asset=AAPL&n=20': 104.08}}
-        obs4 = {'time': T3 - 86400+133, 'observation': {'price?asset=AAPL': 103.45, 'SMA?asset=AAPL&n=20': 104.12}}
-        push_trader_observation(seed.trader_id(1 + (i-1)*3), obs1)
-        push_trader_observation(seed.trader_id(1 + (i-1)*3), obs2)
-        push_trader_observation(seed.trader_id(1 + (i-1)*3), obs3)
-        push_trader_observation(seed.trader_id(1 + (i-1)*3), obs4)
-
-        obs1 = {'time': T3 - 86400+103, 'observation': {'price?asset=SPY': 400.15, 'SMA?asset=AAPL&n=25': 404}}
-        obs2 = {'time': T3 - 86400+113, 'observation': {'price?asset=SPY': 401.80, 'SMA?asset=AAPL&n=25': 404.11}}
-        obs3 = {'time': T3 - 86400+123, 'observation': {'price?asset=SPY': 400.78, 'SMA?asset=AAPL&n=25': 404.08}}
-        obs4 = {'time': T3 - 86400+133, 'observation': {'price?asset=SPY': 403.45, 'SMA?asset=AAPL&n=25': 404.12}}
-        push_trader_observation(seed.trader_id(2 + (i-1)*3), obs1)
-        push_trader_observation(seed.trader_id(2 + (i-1)*3), obs2)
-        push_trader_observation(seed.trader_id(2 + (i-1)*3), obs3)
-        push_trader_observation(seed.trader_id(2 + (i-1)*3), obs4)
-
-        obs1 = {'time': T3 - 86400+103, 'observation': {'price?asset=SPY': 300.15, 'SMA?asset=AAPL&n=10': 304}}
-        obs2 = {'time': T3 - 86400+113, 'observation': {'price?asset=SPY': 301.80, 'SMA?asset=AAPL&n=10': 304.11}}
-        obs3 = {'time': T3 - 86400+123, 'observation': {'price?asset=SPY': 300.78, 'SMA?asset=AAPL&n=10': 304.08}}
-        obs4 = {'time': T3 - 86400+133, 'observation': {'price?asset=SPY': 303.45, 'SMA?asset=AAPL&n=10': 304.12}}
-        push_trader_observation(seed.trader_id(3 + (i-1)*3), obs1)
-        push_trader_observation(seed.trader_id(3 + (i-1)*3), obs2)
-        push_trader_observation(seed.trader_id(3 + (i-1)*3), obs3)
-        push_trader_observation(seed.trader_id(3 + (i-1)*3), obs4)
-
-        com1 = {'time': T3 - 86400+101, 'comment': 'some comment'}
-        com2 = {'time': T3 - 86400+111, 'comment': 'about to go into the next tick'}
-        com3 = {'time': T3 - 86400+121, 'comment': 'this is from the first strategy'}
-        com4 = {'time': T3 - 86400+131,  'comment': 'the last but not least comment'}
-        push_trader_comment(seed.trader_id(1 + (i-1)*3), com1)
-        push_trader_comment(seed.trader_id(1 + (i-1)*3), com2)
-        push_trader_comment(seed.trader_id(1 + (i-1)*3), com3)
-        push_trader_comment(seed.trader_id(1 + (i-1)*3), com4)
-
-        com1 = {'time': T3 - 86400+101, 'comment': 'some comment'}
-        com2 = {'time': T3 - 86400+111, 'comment': 'about to go into the next tick'}
-        com3 = {'time': T3 - 86400+121, 'comment': 'this is from the second strategy'}
-        com4 = {'time': T3 - 86400+131,  'comment': 'the last but not least comment'}
-        push_trader_comment(seed.trader_id(2 + (i-1)*3), com1)
-        push_trader_comment(seed.trader_id(2 + (i-1)*3), com2)
-        push_trader_comment(seed.trader_id(2 + (i-1)*3), com3)
-        push_trader_comment(seed.trader_id(2 + (i-1)*3), com4)
-
-        com1 = {'time': T3 - 86400+101, 'comment': 'some comment'}
-        com2 = {'time': T3 - 86400+111, 'comment': 'about to go into the next tick'}
-        com3 = {'time': T3 - 86400+121, 'comment': 'this is from the third strategy'}
-        com4 = {'time': T3 - 86400+131,  'comment': 'the last but not least comment'}
-        push_trader_comment(seed.trader_id(3 + (i-1)*3), com1)
-        push_trader_comment(seed.trader_id(3 + (i-1)*3), com2)
-        push_trader_comment(seed.trader_id(3 + (i-1)*3), com3)
-        push_trader_comment(seed.trader_id(3 + (i-1)*3), com4)
-
-    spos = {str(seed.account_id(i-1)): {
-        'AAPL': {'qty': 1*acc_scl[i], 'value': 130*acc_scl[i]},
-        'SPY': {'qty': -1*acc_scl[i], 'value': -430*acc_scl[i]},
-        'USD': {'qty': 500*acc_scl[i], 'value': 500*acc_scl[i]}} for i in range(3)}
-    push_portfolio_snapshot(seed.pm_id(1), T3 - 86400*20, spos)
-
-    spos = {str(seed.account_id(i-1)): {
-        'AAPL': {'qty': 1*acc_scl[i], 'value': 120*acc_scl[i]},
-        'SPY': {'qty': -1*acc_scl[i], 'value': -400*acc_scl[i]},
-        'USD': {'qty': 500*acc_scl[i], 'value': 500*acc_scl[i]}} for i in range(3)}
-    push_portfolio_snapshot(seed.pm_id(1), T3 - 86400*15, spos)
-
-    spos = {str(seed.account_id(i-1)): {
-        'AAPL': {'qty': 2*acc_scl[i], 'value': 330*acc_scl[i]},
-        'SPY': {'qty': 0*acc_scl[i], 'value': 0*acc_scl[i]},
-        'USD': {'qty': 250*acc_scl[i], 'value': 250*acc_scl[i]}} for i in range(3)}
-    push_portfolio_snapshot(seed.pm_id(1), T3 - 86400*10, spos)
-
-    spos = {str(seed.account_id(i-1)): {
-        'AAPL': {'qty': 1*acc_scl[i], 'value': 120*acc_scl[i]},
-        'SPY': {'qty': -1*acc_scl[i], 'value': -400*acc_scl[i]},
-        'USD': {'qty': 500*acc_scl[i], 'value': 500*acc_scl[i]}} for i in range(3)}
-    push_portfolio_snapshot(seed.pm_id(1), T3 - 86400*5, spos)
-
-    spos = {str(seed.account_id(i-1)): {
-        'AAPL': {'qty': 1*acc_scl[i], 'value': 120*acc_scl[i]},
-        'SPY': {'qty': -1*acc_scl[i], 'value': -400*acc_scl[i]},
-        'USD': {'qty': 500*acc_scl[i], 'value': 500*acc_scl[i]}} for i in range(3)}
-    push_portfolio_snapshot(seed.pm_id(1), T3, spos)
+        #Strategy 3
+        duration = 60*7
+        trader_id = seed.trader_id(3 + (i-1)*3)
+        init_balance = 500 * acc_scl[i+1]
+        qty = acc_scl[i-1] * 2
+        meta = {'trader_id': trader_id}
+        orders1, obs1, comm1 = generate_trade_data(start, end, 'AAPL', (100,200), qty, duration, meta)
+        orders2, obs2, comm2 = [], [], []
+        orders = (orders1 + orders2)
+        orders.sort(key=lambda x: x['time'])
+        for order in orders:
+            push_order(Instrument.stock(order['instrument'], 'USD'), order['side'],
+                order['qty'], order['order_type'], account_id=seed.account_id(i),
+                t=order['time'], meta=order['meta'])
+        observations = (obs1 + obs2)
+        observations.sort(key=lambda x: x['time'])
+        for obs in observations:
+            push_trader_observation(trader_id, deepcopy(obs))
+        comments = (comm1 + comm2)
+        comments.sort(key=lambda x: x['time'])
+        for comm in comments:
+            push_trader_comment(trader_id, deepcopy(comm))
+        
+        positions = generate_positions(orders, start, end, init_balance, record_duration)
+        for pos in positions:
+            spos = {str(seed.account_id(i-1)): deepcopy(pos['position'])}
+            push_portfolio_snapshot(seed.pm_id(1), pos['time'], spos)
 
 
 if __name__ == "__main__":
     main()
+    print('inserting')
+    _flush()
 
 

@@ -9,19 +9,10 @@ var traderMatch = ref([]);
 
 export const ActivityOptions = {
     template: `
-            <div class="activity-options-wrapper">
-                <div class="activity-options-strategy-selector-wrapper">
-                    <select class="activity-options-strategy-selector" v-model="selectedStrategy" @change="onSelection">
-                        <option>All</option>
-                        <option v-for="strategy in strategies">{{ strategy }}</option>
-                    </select>
-                </div>
-                <div class="activity-options-account-selector-wrapper">
-                    <select class="activity-options-account-selector" v-model="selectedAccount" @change="onSelection">
-                        <option v-for="account in accounts">{{ account }}</option>
-                    </select>
-                </div>
-            </div>
+        <div class="rowflex fh justify-content-end" style="gap: 8px !important;">
+            <dropdown-field :value="strategies[0]" :options="strategies" :key="strategies" @update="onSelection"/>
+            <dropdown-field :value="accounts[0]" :options="accounts" :key="accounts" @update="onSelection"/>
+        </div>
     `,
     data: function () {
         return {
@@ -40,7 +31,6 @@ export const ActivityOptions = {
                 this.bots = response.data;
                 this.accounts = [...new Set(this.bots.map(item => item.account_id))];
                 this.strategies = [...new Set(this.bots.map(item => item.strategy_uri))];
-
                 this.selectedAccount = this.accounts[0];
                 this.selectedStrategy = this.strategies[0];
                 this.onSelection();
@@ -67,7 +57,7 @@ export const ActivityOptions = {
 
 export const ObservationsView = {
     template: `
-        <div class="activity-observations-chart-wrapper">
+        <div class="fh fw">
             <canvas id="activity-observations-chart"></canvas>
         </div>
     `,
@@ -144,8 +134,8 @@ export const ObservationsView = {
 
 export const JournalView = {
     template: `
-        <div class="activity-observations-wrapper">
-            <div class="activity-journal-table-wrapper">
+        <div class="fh fw">
+            <div class="fh fw">
                 <div id="activity-journal-table">
                 </div>
             </div>
@@ -163,14 +153,15 @@ export const JournalView = {
                 return;
             }
             const trader_id = traderMatch.value[0].trader_id;
-            let journalRequest = axios.get('/portfolio/journal', {
+            axios.get('/portfolio/journal', {
                 params: {trader_id: trader_id}}
                 ).then(response => {
                     this.botJournal = response.data;
-                    //add to journal multiple times
+                    for (let i = 0; i < response.data.length; i++) {
+                        response.data[i].time = new Date(parseInt(response.data[i].time * 1000)).toLocaleString();
+                    }
                     for (let i = 0; i < 10; i++) {
-                        this.botJournal.push(response.data[0]);
-                        this.botJournal.push(response.data[0]);
+                        this.botJournal.push(response.data[i]);
                     }
 
                     this.render();
@@ -194,8 +185,8 @@ export const JournalView = {
 
 export const TransactionsView = {
     template: `
-        <div class="activity-transactions-wrapper">
-            <div class="activity-transactions-table-wrapper">
+        <div class="fh fw">
+            <div class="fw fh">
                 <div id="activity-transactions-table">
                 </div>
             </div>

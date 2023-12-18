@@ -4,18 +4,18 @@ import { createLineChart } from './util.js';
 
 export const KeyStatsView = {
     template: `
-    <div class="keystats-wrapper">
-        <div class="keystats-interval-wrapper">
-            <button class="keystats-interval-button" @click="renderView('1d')">1d</button>
-            <button class="keystats-interval-button" @click="renderView('1w')">1w</button>
-            <button class="keystats-interval-button" @click="renderView('4w')">4w</button>
-            <button class="keystats-interval-button" @click="renderView('12w')">12w</button>
-            <button class="keystats-interval-button" @click="renderView('SE')">SE</button>
+    <div class="colflex">
+        <div class="flexitem" style="flex-basis: 5%">
+            <button class="interval-button" @click="renderView('1d')">1d</button>
+            <button class="interval-button" @click="renderView('1w')">1w</button>
+            <button class="interval-button" @click="renderView('4w')">4w</button>
+            <button class="interval-button" @click="renderView('12w')">12w</button>
+            <button class="interval-button" @click="renderView('SE')">SE</button>
         </div>
-        <div class="keystats-returnchart-wrapper">
+        <div class="flexitem" style="flex-basis: 30%">
                 <canvas class="line-chart-canvas" id="keystats-return-chart"></canvas>
         </div>
-        <div class="keystats-table-wrapper">
+        <div class="flexitem" style="flex-basis: 65%">
             <div id="keystats-table">
                 <table class="list-table">
                 <thead>
@@ -77,27 +77,19 @@ export const KeyStatsView = {
 
 export const OverallWorthView = {
     template: `
-    <div class="performance-worth-view-wrapper">
-        <div class="performance-worth-box">
-            <p class="performance-worth-title">Overall Worth</p>
-            <p class="performance-worth-value">{{ overallWorth }}</p>
-            <p class="performance-worth-change">{{ overallWorthChange }}</p>
+        <div class="fh fw" style="position: relative">
+            <div class="centeritem rowflex" style="width: 70%; gap: 30px;">
+                <div class="valuebox flexitem">
+                    <h5 class="bold">Overall Worth</h5>
+                    <h1 class="bold">{{ overallWorth }}</h1>
+                    <h5 class="bold" style="text-align: right">{{ overallWorthChange }}</h5>
+                </div>
+                <ul class="flexitem">
+                    <li> Capital: {{ capitalWorth }} </li>
+                    <li> Security: {{ securityWorth }} </li>
+                </ul>
+            </div>
         </div>
-        <div class="performance-worth-details">
-            <table class="list-table">
-                <tbody>
-                    <tr>
-                        <td class="list-table-key" style="width: 30%;">Capital: </td>
-                        <td class="list-table-value">{{ capitalWorth }}</td>
-                    </tr>
-                    <tr>
-                        <td class="list-table-key" style="width: 30%;">Security: </td>
-                        <td class="list-table-value">{{ securityWorth }}</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
     `,
     data: function() {
         return {

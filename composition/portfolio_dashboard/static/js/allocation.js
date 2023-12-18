@@ -1,65 +1,33 @@
 import { app } from './app.js';
 import { pm_id } from './app.js';
 import { toRaw } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js'
-//import random int
 
 // Allocator Views
 export const AllocatorView = {
     template: `
-    <div class="allocation-allocator-wrapper">
-        <div class="allocation-allocator-pie-wrapper">
-            <canvas class="line-chart-canvas" id="allocation-allocator-pie"></canvas>
+    <div class="rowflex fh">
+        <div class="flexitem" style="flex-basis: 60%">
+            <canvas class="line-chart-canvas" ref="pieChart"></canvas>
         </div>
-        <form class="allocation-allocator-config-form-wrapper">
-            <div class="allocation-allocator-config-wrapper">
-                <div v-if="focus()" id="allocation-allocator-dropdown-wrapper">
-                    <select id="allocation-allocator-dropdown" v-model="activeStrategyConfig.strategy" @change="onStrategySelection">
-                        <option v-for="strategy in availableStrategies" :key="strategy.name" :value="strategy.name">
-                            {{ strategy.name }}
-                        </option>
-                    </select>
-                </div>
-                <div v-if="focus()" class="allocation-allocator-config-params-wrapper">
-                    <div class="allocation-allocator-input-wrapper">
-                        <label class="allocation-allocator-input-label">name</label>
-                        <input class="allocation-allocator-text-input" id="allocation-allocator-name" type="text" v-model="nameValue">
-                    </div>
-                    <div class="allocation-allocator-input-wrapper">
-                        <label class="allocation-allocator-input-label">allocation {{ allocSliderValue }}%</label>
-                        <input class="allocation-allocator-slider-input" id="allocation-allocator-alloc-slider" type="range" min="0" :max="100" step="1" v-model="allocSliderValue">
-                    </div>
-                    <div v-for="(param, label, index) in activeStrategyConfig.options" :key="index">
-                        <div class="allocation-allocator-input-wrapper">
-                            <template v-if="param.type === 'range'">
-                                <label class="allocation-allocator-input-label">{{ label }}: {{ param.value }}</label>
-                                <input class="allocation-allocator-slider-input" type=range :min=param.min :max=param.max :step=param.step v-model="param.value">
-                            </template>
-                
-                            <template v-else-if="param.type === 'dropdown'">
-                                <label class="allocation-allocator-input-label">{{ label }}</label>
-                                <select class="allocation-allocator-dropdown-input" v-model="param.value">
-                                    <option v-for="option in param.options" :key="option" :value="option">
-                                    {{ option }}
-                                    </option>
-                                </select>
-                            </template>
-                        </div>
-                    </div>
-                    <div id="allocation-allocator-reset-wrapper">
-                        <button id="allocation-allocator-remove" type="button" @click="onRemoveStrategy">Remove</button>
-                        <button :disabled="activeStrategyConfig.new" id="allocation-allocator-reset" type="button" @click="onRevertStrategy">Revert</button>
-                    </div>
-                </div>
-                <div v-else id="allocation-allocator-empty-wrapper">
-                    <div id="allocation-allocator-create-wrapper">
-                        <button id="allocation-allocator-create" type="button" @click="onNewStrategy">Define new strategy</button>
-                    </div>
+        <div class="flexitem colflex" style="flex-basis: 40%">
+            <div v-if="focus()" class="colflex fw" :key="activeStrategyConfig.name + activeStrategyConfig.strategy">
+                <dropdown-field :value="activeStrategyConfig.strategy" :options="Object.keys(availableStrategies)"\
+                 @update="strategyTypeChange"/>
+                <model-form :options="genericParams" @update="genericParamChange"/>
+                <model-form :options="activeStrategyConfig.options" @update="strategyParamChange"/>
+                <div>
+                    <button type="button" @click="onRemoveStrategy">Remove</button>
+                    <button :disabled="activeStrategyConfig.new" type="button" @click="onRevertStrategy">Revert</button>
                 </div>
             </div>
-            <div id="allocation-allocator-submit-wrapper">
-                <button type="button" id="allocation-allocator-submit" @click="saveStrategyAllocation">Save</button>
+            <div v-else class="fw rowflex justify-content-center" style="flex-basis: 8%;">
+                <button class="flexitem" type="button" @click="onNewStrategy" style="font-size: 1.3em; flex-basis: 70%;\
+                 flex-grow: 0; margin-top: 10px">Lorem ipsum dolor</button>
             </div>
-        </form>
+            <div class="rowflex justify-content-end fw padding-bottom: 20px;">
+                <button type="button" @click="saveStrategyAllocation" style="font-size: 1.3em">Save</button>
+            </div>
+        </div>
     </div>
     `,
     data: function() {
@@ -73,11 +41,14 @@ export const AllocatorView = {
             chart: null,
             freeAllocation: 0,
             paramsVerified: true,
+            genericParams: {
+                name: { type: 'text', banned: [], default: '', value: ''},
+                allocation: { type: 'range', min: 0, max: 100, step: 1, available: 100, value: 0},
+            },
         };
     },
     methods: {
         focus() {
-            //false if activeStrategyConfig is empty
             return Object.keys(this.activeStrategyConfig).length !== 0;
         },
         update () {
@@ -172,64 +143,17 @@ export const AllocatorView = {
             }
             return availableStrategies;
         },
-        onStrategySelection() {
-            let strategyDef = this.availableStrategies[this.activeStrategyConfig.strategy].options;
-            let options = JSON.parse(JSON.stringify(strategyDef));
-            for (let option of Object.values(options)) {
-                option.default = option.value;
-            }
-            this.activeStrategyConfig.options = options;
+        saveStrategyAllocation() {
+            const allocCopy = JSON.parse(JSON.stringify(this.existingStrategies));
+            this.originalStrategies = allocCopy;
         },
-        onNewStrategy () {
-            const alloc = parseInt(this.freeAllocation * 0.5);
-            // strategy is the first strategy in the availableStrategy object
-            const strategy = this.availableStrategies[Object.keys(this.availableStrategies)[0]];
-            var name = 'New Strategy #' + Math.floor(Math.random() * 1000);
-            while (this.existingStrategies.map(strategy => strategy.qualifiedName).includes(name)
-                || this.existingStrategies.map(strategy => strategy.name).includes(name)) {
-                name = 'New Strategy #' + Math.floor(Math.random() * 1000);
-            }
-            const newStrategyConfig = {
-                name: name,
-                qualifiedName: name,
-                new: true,
-                strategy: strategy.name,
-                options: JSON.parse(JSON.stringify(strategy.options)),
-                allocation: alloc
-            };
-            this.existingStrategies.splice(0, 0, newStrategyConfig);
-            //this.existingStrategies.push(newStrategyConfig);
-            this.activeStrategyConfig = newStrategyConfig;
-            this.renderView();
-        },
-        onRevertStrategy () {
-            //find the strategy name in originalStrategies, if exists set it to original
-            let name = this.activeStrategyConfig.qualifiedName;
-            for (let value of Object.values(this.originalStrategies)) {
-                if (value.qualifiedName === name) {
-                    this.activeStrategyConfig.options = JSON.parse(JSON.stringify(value.options));
-                    this.activeStrategyConfig.strategy = value.strategy;
-                    this.renderView();
-                }
-            }
-        },
-        onRemoveStrategy () {
-            let name = this.activeStrategyConfig.qualifiedName;
-            // remove from existing strategies
-            this.existingStrategies = this.existingStrategies.filter(
-                strategy => strategy.qualifiedName != name).map(
-                strategy => toRaw(strategy));
-            //destroy chart
-            //this.chart.destroy();
-            //this.chart = null;
-            this.activeStrategyConfig = {};
-            this.renderView();
-        },
+        //updater
         renderView () {
             //use strategyAllocation to create pie chart. keys are names and values are weights 0 to 1.0
             this.updateFreeAllocation();
             let label = this.existingStrategies.map(strategy => strategy.name);
             label.push('free');
+            console.log(label);
             let data = this.existingStrategies.map(strategy => strategy.allocation);
             let labelDisp = label.slice();
             for (let i = 0; i < label.length; i++)
@@ -237,12 +161,21 @@ export const AllocatorView = {
                     labelDisp[i] = labelDisp[i].slice(0, 10) + '...'; 
             data = this.existingStrategies.map(strategy => strategy.allocation);
             data.push(this.freeAllocation);
+            //create a color family
+            let colors = [];
+            let steps = 5;
+            let hueFrom = 140;
+            let hueTo = 220;
+            let saturation = 80;
+            let lightness = 15;
+            for (let i = 0; i < label.length-1; i++)
+                colors.splice(0,0,'hsl(' + (hueFrom + i * (hueTo - hueFrom) / steps) + ', ' + saturation + '%, ' + lightness + '%)');
+            colors.push('hsl(180, 10%, 12%)');
             if (this.chart == null) {
-                let elemId = 'allocation-allocator-pie';
-                let ctx = document.getElementById(elemId).getContext('2d');
+                let ctx = this.$refs.pieChart.getContext('2d');
                 let chart = new Chart(ctx, {
                     type: 'pie',
-                    data: { labels: labelDisp, datasets: [{label: label, data: data}]},
+                    data: { labels: labelDisp, datasets: [{label: label, data: data, backgroundColor: colors}]},
                     options: {animations: false, responsive: true, maintainAspectRatio: false,
                         layout: {padding: {top: 10, bottom: 10, left: 10, right: 10}}},
                 });
@@ -255,19 +188,16 @@ export const AllocatorView = {
                     if (!this.paramsVerified) return;
                     if (item.length === 0) return;
                     const label = item[0]._model.label;
-                    if (label == 'free') { this.activeStrategyConfig = {};
-                    } else { this.activeStrategyConfig = this.existingStrategies.filter(strategy => strategy.name === label)[0]; }
-                    this.renderView();
+                    this.onStrategySelection(label);
                 }
             }
             this.chart.data.datasets[0].data = data;
             this.chart.data.datasets[0].label = label;
+            this.chart.data.datasets[0].backgroundColor = colors;
+            console.log(this.chart.data.datasets[0].backgroundColor);
             this.chart.data.labels = labelDisp;
-            //this.chart.data.datasets[0].data = this.existingStrategies.map(strategy => strategy.allocation);
-            //this.chart.data.datasets[0].label = this.existingStrategies.map(strategy => strategy.name);
-            //this.chart.data.labels = this.existingStrategies.map(strategy => strategy.name);
             if (this.focus()){
-                const labelIndex = this.chart.data.datasets[0].label.indexOf(this.activeStrategyConfig.qualifiedName);
+                const labelIndex = this.chart.data.datasets[0].label.indexOf(this.activeStrategyConfig.name);
                 var name = this.activeStrategyConfig.name;
                 if (name.length > 10)
                     name =  name.slice(0, 10) + '...';
@@ -288,66 +218,97 @@ export const AllocatorView = {
             let totAlloc = this.existingStrategies.reduce((a, b) => a + b.allocation, 0);
             this.freeAllocation = 100 - totAlloc;
         },
-        saveStrategyAllocation() {
-            const allocCopy = JSON.parse(JSON.stringify(this.existingStrategies));
-            this.originalStrategies = allocCopy;
-        }
-    },
-    computed: {
-        allocSliderValue: {
-            get: function () {
-                this.updateFreeAllocation();
-                var free = document.querySelector(':root');
-                free.style.setProperty('--slider-blocked-portion', (this.freeAllocation + this.activeStrategyConfig.allocation) + '%');
-                return this.activeStrategyConfig.allocation;
-            },
-            set: function(value) {
-                //free allocation is 100 - sum of all other allocations
-                if (!this.focus()) return;
-                this.activeStrategyConfig.allocation = parseInt(value);
-                let totAlloc = Object.values(this.existingStrategies
-                    ).reduce((a, b) => a + b.allocation, 0);
-                if (totAlloc > 100) { this.activeStrategyConfig.allocation = 100 - totAlloc + this.activeStrategyConfig.allocation; }
-                this.renderView();
-                return this.activeStrategyConfig.allocation;
+        //command handlers
+        onNewStrategy () {
+            const alloc = parseInt(this.freeAllocation * 0.5);
+            // strategy is the first strategy in the availableStrategy object
+            const strategy = this.availableStrategies[Object.keys(this.availableStrategies)[0]];
+            var name = 'New Strategy #' + Math.floor(Math.random() * 1000);
+            while (this.existingStrategies.map(strategy => strategy.qualifiedName).includes(name)
+                || this.existingStrategies.map(strategy => strategy.name).includes(name)) {
+                name = 'New Strategy #' + Math.floor(Math.random() * 1000);
             }
+            const newStrategyConfig = {
+                name: name,
+                qualifiedName: name,
+                new: true,
+                strategy: strategy.name,
+                options: JSON.parse(JSON.stringify(strategy.options)),
+                allocation: alloc
+            };
+            this.existingStrategies.splice(0, 0, newStrategyConfig);
+            this.activeStrategyConfig = newStrategyConfig;
+            this.renderView();
         },
-        nameValue: {
-            get: function () {
-                if (!this.focus()) return '';
-                if (this.paramsVerified) return this.activeStrategyConfig.name;
-                else return this.activeStrategyConfig.name;
-            },
-            set: function (value) {
-                if (!this.focus()) return;
-                this.activeStrategyConfig.name = value;
-                let sMatch = this.existingStrategies.filter(strategy => strategy.name === value);
-                if ((sMatch.length > 0 && sMatch[0] != this.activeStrategyConfig) || sMatch.length > 1) {
-                    this.paramsVerified = false;
-                    //find the name input element and set background color to red
-                    document.getElementById('allocation-allocator-name').style.backgroundColor = 'hsl(0, 80%, 70%)';
-                } else {
-                    this.paramsVerified = true;
+        onRevertStrategy () {
+            let name = this.activeStrategyConfig.qualifiedName;
+            for (let value of Object.values(this.originalStrategies)) {
+                if (value.qualifiedName === name) {
+                    this.activeStrategyConfig.options = JSON.parse(JSON.stringify(value.options));
+                    this.activeStrategyConfig.strategy = value.strategy;
                     this.renderView();
-                    //find the name input element and set background color to whatever it was before
-                    document.getElementById('allocation-allocator-name').style.backgroundColor = '';
                 }
             }
         },
+        onRemoveStrategy () {
+            let name = this.activeStrategyConfig.qualifiedName;
+            this.existingStrategies = this.existingStrategies.filter(
+                strategy => strategy.qualifiedName != name).map(
+                strategy => toRaw(strategy));
+            this.activeStrategyConfig = {};
+            this.renderView();
+        },
+        //form change handlers
+        onStrategySelection(name) {
+            if (name == 'free') {
+                this.activeStrategyConfig = {};
+            } else {
+                this.activeStrategyConfig = this.existingStrategies.filter(
+                    strategy => strategy.name === name)[0]; 
+                this.genericParams.name.value = this.activeStrategyConfig.name;
+                this.genericParams.allocation.value = this.activeStrategyConfig.allocation;
+                this.genericParams.allocation.available = this.freeAllocation + this.activeStrategyConfig.allocation;
+            }
+            this.renderView();
+        },
+        strategyTypeChange(strategy) {
+            this.activeStrategyConfig.strategy = strategy;
+            let strategyDef = this.availableStrategies[this.activeStrategyConfig.strategy].options;
+            let options = JSON.parse(JSON.stringify(strategyDef));
+            for (let option of Object.values(options)) {
+                option.value = option.value;
+            }
+            this.activeStrategyConfig.options = options;
+        },
+        genericParamChange(data) {
+            //update params, if strategy has changed update strategy param form
+            for (let [key, value] of Object.entries(data)) {
+                this.activeStrategyConfig[key] = value;
+            }
+            this.renderView();
+        },
+        strategyParamChange(data) {
+            for (let [key, value] of Object.entries(data)) {
+                this.activeStrategyConfig.options[key].value = value;
+            }
+        }
     },
     mounted () {
         this.update();
     },
 };
-
 export const AllocationPieView = {
     template: `
     `
-};
 
+};
 export const EmptyView = {
     template: `
-    `
+    `,
+    data: function() {
+        return {
+        };
+    },
 };
 
 app.component('allocatorview', AllocatorView);

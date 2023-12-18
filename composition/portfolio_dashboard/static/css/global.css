@@ -1,0 +1,219 @@
+::-webkit-scrollbar {
+  background: var(--background-color-a-darker);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--background-color-a-lighter);
+}
+
+.justify-content-end {
+  justify-content: flex-end !important;
+}
+
+.justify-content-center {
+  justify-content: center !important;
+}
+
+.rowflex {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+
+.colflex {
+    display: flex;
+    flex-wrap: nowrap;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.flexitem {
+    flex-grow: 1;
+    flex-shrink: 1;
+    position: relative;
+}
+
+.centeritem {
+    margin: 0;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    -ms-transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%);
+}
+
+.fh {
+  height: 100%;
+}
+
+.fw {
+  width: 100%;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  /*use the default font family of <p> tag*/
+  font-family: sans-serif;
+  font-weight: bold;
+  color: var(--font-color-a);
+}
+
+button {
+  background-color: var(--view-button-background-color);
+  color: var(--view-button-font-color);
+  border: 2px solid var(--view-button-border-color);
+  padding: 8px;
+}
+
+button:disabled {
+  background-color: var(--view-button-disabled-background-color);
+  color: var(--view-button-disabled-font-color);
+  border: 2px solid var(--view-button-border-color);
+  padding: 8px;
+}
+
+.interval-button {
+  background-color: var(--view-button-background-color);
+  color: var(--view-button-font-color);
+  border: 0px solid var(--view-button-border-color);
+  padding: 8px;
+}
+
+.valuebox {
+  background-color: var(--cyan);
+  line-height: 0.6em;
+  padding: 1px 20px;
+  text-align: center;
+}
+
+ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  color: var(--font-color-a);
+  line-height: 1.8em;
+  font-size: 1.5em;
+}
+
+li {
+  padding: 0;
+  margin: 0;
+  color: var(--font-color-a);
+}
+
+label {
+  font-family: sans-serif;
+  font-weight: bold;
+  color: var(--font-color-a);
+}
+
+
+/* fields */
+
+.field-wrapper{
+  display: flex;
+  flex-flow: row nowrap;
+  justify-content: space-around;
+  line-height: 2.0rem;
+}
+
+.dropdown-field {
+  background-color: var(--field-background-color);
+  color: var(--field-font-color);
+  padding: 0px;
+}
+
+.text-field {
+  background-color: var(--field-background-color);
+  color: var(--field-font-color);
+  padding: 0px;
+}
+
+.text-field:invalid {
+  background-color: red;
+}
+
+.checkbox-field {
+  background-color: var(--field-background-color);
+  color: var(--field-font-color);
+  padding: 0px;
+}
+
+.slider-field {
+  background-color: var(--field-background-color);
+  color: var(--field-font-color);
+  appearance: none;
+  outline: none;
+  border-radius: 5px;
+  height: 6px;
+  justify-content: flex-end;
+  padding: 0px;
+}
+
+/*change line color of any input type range*/
+.slider-field::-webkit-slider-runnable-track {
+  background: var(--field-font-color);
+  border-radius: 5px;
+  height: 6px;
+}
+
+.slider-field::-webkit-slider-thumb {
+  appearance: none;
+  background: var(--background-color-a-lighter);
+  border-radius: 50%;
+  border: 1px solid var(--field-font-color);
+  height: 20px;
+  width: 20px;
+  margin-top: -7px;
+}
+
+.form-option-wrapper {
+  display: flex;
+  flex-flow: row nowrap;
+  justify-content: space-between;
+}
+
+/* table */
+
+.generic-table-wrapper {
+    position: relative;
+    height: 100%;
+    width: 100%;
+}
+
+.generic-table-scrollable {
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    overflow-y: scroll;
+}
+
+.generic-table {
+    border: var(--table-border-size) solid var(--table-border-color);
+    border-spacing: var(--border-spacing);
+    width: 100%;
+}
+
+.generic-table-header {
+    position: inherit;
+}
+
+.generic-table-header-cell {
+    color: var(--header-cell-font-color);
+    background-color: var(--header-cell-background-color);
+    border: var(--header-cell-border-size) solid var(--header-cell-border-color);
+    padding: var(--header-size);
+}
+
+.generic-table-row {
+    position: inherit;
+}
+
+.generic-table-row-cell {
+    color: var(--row-cell-font-color);
+    background-color: var(--row-cell-background-color);
+    border: var(--row-cell-border-size) solid var(--row-cell-border-color);
+    padding: var(--row-size);
+}

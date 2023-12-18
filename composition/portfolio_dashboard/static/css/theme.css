@@ -1,45 +1,71 @@
 :root {
-    /* background colors */
+    /* pallete */
     --background-color-a: rgba(23,23,21,1);
     --background-color-a-light: rgba(25,25,25,1);
+    --background-color-a-lighter: rgba(33,33,33,1);
     --background-color-a-dark: rgba(21,21,21,1);
-    --background-color-b: rgba(19, 86, 67);
-    /* menu colors */
-    --nav-button-color: rgba(44,64,54,1);
-    --nav-item-font-color: rgba(193, 191, 184 ,1);
-
-    /* font colors */    
+    --background-color-a-darker:  rgba(17, 17, 17);
+    --background-color-b: rgba(17, 17, 17);
+    --border-color-a: rgba(90, 90, 90 ,1);
     --font-color-a: rgba(193, 191, 184 ,1);
     --font-color-a-light: rgba(193, 191, 184 ,1);
     --font-color-a-dark: rgba(193, 191, 184 ,1);
+    --positive-color: rgba(20,215,20,1);
+    --negative-color: rgba(215,20,20,1);
+    --cyan: rgba(19, 86, 67);
 
-    /* view input colors */
-    --view-button-font-color: rgba(193,191,184,1);
-    --view-button-background-color: rgba(23, 23, 21 ,1);
-    --view-button-border-color: rgba(33, 33, 31 ,1);
+
+    /* menu settings */
+    --nav-button-color: var(--background-color-a-light);
+    --nav-item-font-color: var(--font-color-a);
+
+    /* view input settings */
+    --view-button-font-color: var(--font-color-a);
+    --view-button-background-color: var(--background-color-a-dark);
+    --view-button-disabled-background-color: var(--background-color-a-light);
+    --view-button-disabled-font-color:  var(--font-color-a-dark);
+    --view-button-border-color: var(--border-color-a);
     --view-button-border-size: 2px;
 
-    /* tab colors */
-    --tab-bar-color: rgba(17,17,17,1);
-    --panel-color: rgba(33,33,31,1);
-    --border-color:gray;
+    /* tab settings */
+    --tab-bar-color: var(--background-color-b);
+    --panel-color: var(--background-color-a-dark);
+    --border-color: var(--border-color-a);
     --panel-gap: 10px;
     --view-gap: 5px;
     --tab-bar-size: 3vh;
+    --tab-content-padding: 10px;
 
-    /* line chart colors */
-    --line-chart-background-color: rgba(23,23,21,1);
-    --line-chart-border-color: rgba(100,100,100,1);
-    --line-chart-font-color: rgba(255,255,255,1);
+    /* line chart settings */
+    --line-chart-background-color: var(--background-color-a);
+    --line-chart-border-color: var(--border-color-a);
+    --line-chart-font-color: var(--font-color-a);
 
-    /* table colors */
-    --table-background-color: rgba(33,33,33,1);
-    --table-cell-border-color: var(--background-color-a-light);
-    --table-border-color: var(--background-color-a-dark);
-    --table-default-font-color: rgba(170,170,170,1);
-    --table-positive-font-color: rgba(20,215,20,1);
-    --table-negative-font-color: rgba(215,20,20,1);
-    --table-border-size: 5px;
-    --table-cell-border-size: 2px;
-    
+    /* table settings */
+    --list-background-color: var(--background-color-a-lighter);
+    --list-cell-border-color: var(--background-color-a-lighter);
+    --list-border-color: var(--background-color-a-dark);
+    --list-default-font-color: var(--font-color-a);
+    --list-border-size: 5px;
+    --list-cell-border-size: 2px;
+
+    /* field settings */
+    --field-background-color: var(--view-button-background-color);
+    --field-font-color: var(--view-button-font-color);
+    --field-default-width: 9;
+
+    /* table settings */
+    --table-border-color: none;
+    --table-border-size: 1px;
+    --header-cell-border-color: none;
+    --header-cell-border-size: 1px;
+    --header-cell-font-color: var(--font-color-a-dark);
+    --header-cell-background-color: var(--background-color-a-dark);
+    --header-size: 5px;
+    --row-cell-border-color: none;
+    --row-cell-border-size: 5px;
+    --row-cell-font-color: var(--font-color-a-dark);
+    --row-cell-background-color: var(--background-color-a-dark);
+    --border-spacing: 10px;
+    --row-size: 5px;
 }

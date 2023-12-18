@@ -1,0 +1,139 @@
+.container {  
+    background-color: var(--background-color-a);
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    margin: 0px;
+    padding: 0px;
+    top: 0px;
+    left: 0px;
+}
+
+.navitem {
+    background-color: var(--background-color-a);
+    display: inline-block;
+    border: 0px;
+    height: 100%;
+    margin: 0px;
+    min-width: 15%;
+    color: var(--nav-item-font-color);
+    border: 1px solid var(--border-color);
+}
+
+.navbar{
+    height: 4%;
+    background-color: green;
+    background-color: var(--background-color-a-light);
+    padding: 0px;
+}
+
+.facetframe{
+    height: 93%;
+    background-color: var(--background-color-a);
+}
+
+.facet{
+    height: 100%;
+    padding: var(--panel-gap);
+    box-sizing: border-box;
+}
+.optbar {
+    position: relative;
+    background-color: var(--background-color-a);
+    height: 27px;
+    padding: 10px;
+    padding-top: 30px;
+}
+
+.contentgrid-wrapper {
+    height: 93%;
+}
+
+.tab{
+    background-color: var(--background-color-a-light);
+    display: flex;
+    flex-flow: column;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+}
+
+.tab-bar{
+    flex-basis: var(--tab-bar-size);
+    flex-shrink: 0;
+    flex-grow: 0;
+    background-color: var(--tab-bar-color);
+}
+.tab-content{
+    flex-basis: calc(100% - var(--tab-bar-size));
+    padding: var(--tab-content-padding);
+    flex-shrink: 1;
+    flex-grow: 1;
+}
+
+.line-chart-canvas {
+  max-width:100%;
+  max-height:100%;
+  background-color: var(--line-chart-background-color);
+}
+
+.list-table {
+    width: 100%;
+    height: 100%;
+}
+
+.list-table-key {
+    border: var(--list-cell-border-size) solid;
+    border-color: var(--list-cell-border-color);
+    color: var(--list-default-font-color);
+    font-size: 1.7vh;
+    background-color: var(--list-background-color);
+}
+
+.list-table-value {
+    border: var(--list-cell-border-size) solid;
+    border-color: var(--list-cell-border-color);
+    color: var(--list-default-font-color);
+    font-size: 1.7vh;
+    background-color: var(--list-background-color);
+}
+
+.performance-grid {
+    display: grid;
+    position: relative;
+    height: 100%;
+    max-height: 100%;
+    grid-template-columns: 65% 35%;
+    grid-template-rows: 24% 42% 34%;
+    gap: var(--panel-gap) var(--panel-gap);
+    grid-template-areas:
+      "leftmost upperright"
+      "leftmost lowerright"
+      "leftmost lowerright";
+}
+
+.allocation-grid {
+    display: grid;
+    position: relative;
+    height: 100%;
+    max-height: 100%;
+    grid-template-columns: 1.4fr 1fr;
+    grid-template-rows: 50% 50%;
+    gap: var(--panel-gap);
+    grid-template-areas:
+      "upperleft rightmost"
+      "lowerleft rightmost";
+}
+
+.activity-grid {
+    display: grid;
+    position: relative;
+    height: 100%;
+    grid-template-columns: 1fr 1.2fr;
+    grid-template-rows: 1.2fr 1fr;
+    gap: var(--panel-gap);
+    grid-auto-flow: row;
+    grid-template-areas:
+      "upperright upperleft"
+      "bottom bottom";
+}

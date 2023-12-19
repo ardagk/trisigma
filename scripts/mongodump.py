@@ -15,7 +15,7 @@ import numpy as np
 def generate_trade_data(start, end, asset, prices, qty, duration, meta={}):
     size = int((end - start).total_seconds() // duration)
     rng = np.random.RandomState(1)
-    noise = rng.rand(size) * 0.3 + 1
+    noise = rng.rand(size) * 0.1 + 1
     start_price, end_price = prices
     buy = True
     orders = []
@@ -40,7 +40,7 @@ def generate_trade_data(start, end, asset, prices, qty, duration, meta={}):
                         'tif': None})
         if i % 3 == 0:
             comments.append({'time': time, 'comment': rng.choice(words, 1)[0]})
-        observations.append({'time': time, 'observations':{'price': price}})
+        observations.append({'time': time, 'observations':{f"{asset}_price": price}})
         buy = not buy
     return orders, observations, comments
 
@@ -90,7 +90,7 @@ class Seed():
         return hex(int(("1" + "0"*31), 16) + s)[2:]
 
 seed = Seed()
-DB_NAME = "trisigma_test2"
+DB_NAME = "trisigma_test"
 MONGO_URI = os.getenv("MONGO_URI"); assert MONGO_URI
 
 client = MongoClient(MONGO_URI)
@@ -103,7 +103,7 @@ def _insert(collection, data):
 def _flush():
     print('# collections:', len(buffer.keys()))
     for collection, data in buffer.items():
-        print('inserting', collection)
+        print('inserting', collection+"...")
         client[DB_NAME][collection].insert_many(data)
     buffer.clear()
 
@@ -161,6 +161,7 @@ def push_strategydef(name, version, options, meta=None):
 
 def push_order(instrument, side, qty, order_type, t, order_status=order_status.FILLED, price=None, tif=None, account_id=None, meta=None):
     meta = meta or {}
+    assert account_id is not None
     o = Order(
             time=t,
             instrument=instrument,
@@ -191,7 +192,7 @@ def push_trader_comment(trader_id, comment):
 
 
 def main():
-    acc_scl = [10, 50, 100]
+    acc_scl = [5, 10, 20]
     ST1 = to_strategy_uri('strategy1', {'asset':'AAPL', 'ncandle': 3})
     ST2 = to_strategy_uri('strategy2', {'asset':'SPY', 'letter': 'A'})
     ST3 = to_strategy_uri('strategy3', {'asset':'TSLA', 'ncandle': 0.3})
@@ -208,13 +209,13 @@ def main():
     push_strategy_allocation(seed.pm_id(1), {ST1: 0.5, ST2: 0.3, ST3: 0.1})
     push_strategy_allocation_naming(seed.pm_id(1), {ST1: "first strategy", ST2: "second strategy", ST3: "third strategy"})
 
-    ppos = {str(seed.account_id(i-1)): {'AAPL': 1*acc_scl[i], 'SPY': -1*acc_scl[i], 'USD': 100*acc_scl[i]} for i in range(3)}
-    push_portfolio_pos(seed.pm_id(1), ppos)
-
-    start = datetime(2023, 12, 1)
+    start = datetime(2023, 8, 1)
     end = datetime.now()
     T2 = start.timestamp()
+    full_pos = {}
+    historic_pos = {}
     for i in range(1, 4):
+        historic_pos[str(seed.account_id(i-1))] = []
         exposure_table = ExposureTable(
                 {ST1:Exposure(alloc={'AAPL': 0.3}, buffer={}),
                  ST2:Exposure(alloc={'SPY': -1}, buffer={}),
@@ -226,10 +227,11 @@ def main():
         push_trader(seed.account_id(i), ST2, T2, seed.trader_id(2 + (i-1)*3))
         push_trader(seed.account_id(i), ST3, T2, seed.trader_id(3 + (i-1)*3))
 
+        last_positions = []
         #Strategy 1
         duration = 60*7
         record_duration = 600
-        init_balance = 500 * acc_scl[i+1]
+        init_balance = 5000 * acc_scl[i-1]
         trader_id = seed.trader_id(1 + (i-1)*3)
         qty = acc_scl[i-1]
         meta = {'trader_id': trader_id}
@@ -251,14 +253,13 @@ def main():
             push_trader_comment(trader_id, deepcopy(comm))
         
         positions = generate_positions(orders, start, end, init_balance, record_duration)
-        for pos in positions:
-            spos = {str(seed.account_id(i-1)): deepcopy(pos['position'])}
-            push_portfolio_snapshot(seed.pm_id(1), pos['time'], spos)
+        historic_pos[str(seed.account_id(i-1))].append(positions)
+        last_positions.append(positions[-1])
 
         #Strategy 2
         duration = 60*8
         trader_id = seed.trader_id(2 + (i-1)*3)
-        init_balance = 500 * acc_scl[i+1]
+        init_balance = 5000 * acc_scl[i-1]
         qty = acc_scl[i-1]
         meta = {'trader_id': trader_id}
         orders1, obs1, comm1 = generate_trade_data(start, end, 'AAPL', (100,200), qty, duration, meta)
@@ -279,14 +280,13 @@ def main():
             push_trader_comment(trader_id, deepcopy(comm))
         
         positions = generate_positions(orders, start, end, init_balance, record_duration)
-        for pos in positions:
-            spos = {str(seed.account_id(i-1)): deepcopy(pos['position'])}
-            push_portfolio_snapshot(seed.pm_id(1), pos['time'], spos)
+        historic_pos[str(seed.account_id(i-1))].append(positions)
+        last_positions.append(positions[-1])
 
         #Strategy 3
         duration = 60*7
         trader_id = seed.trader_id(3 + (i-1)*3)
-        init_balance = 500 * acc_scl[i+1]
+        init_balance = 5000 * acc_scl[i-1]
         qty = acc_scl[i-1] * 2
         meta = {'trader_id': trader_id}
         orders1, obs1, comm1 = generate_trade_data(start, end, 'AAPL', (100,200), qty, duration, meta)
@@ -307,14 +307,40 @@ def main():
             push_trader_comment(trader_id, deepcopy(comm))
         
         positions = generate_positions(orders, start, end, init_balance, record_duration)
-        for pos in positions:
-            spos = {str(seed.account_id(i-1)): deepcopy(pos['position'])}
-            push_portfolio_snapshot(seed.pm_id(1), pos['time'], spos)
+        historic_pos[str(seed.account_id(i-1))].append(positions)
+        last_positions.append(positions[-1])
 
+        full_acc_pos = {}
+        for pos in last_positions:
+            for asset, info in pos['position'].items():
+                full_acc_pos.setdefault(asset, 0)
+                full_acc_pos[asset] += info['qty']
+        full_pos[str(seed.account_id(i-1))] = full_acc_pos
+        
+    snapshots = []
+    account_ids = list(historic_pos.keys())
+    trader_size = len(historic_pos[account_ids[0]])
+    history_size = len(historic_pos[account_ids[0]][0])
+    for i in range(history_size):
+        snapshot = {'time': None, 'positions':{}}
+        for acc_id in account_ids:
+            positions = [
+                    historic_pos[acc_id][k][i] 
+                    for k in range(trader_size)]
+            full_pos = {}
+            t = None
+            for pos in positions:
+                t = pos['time']
+                for asset, info in pos['position'].items():
+                    full_pos.setdefault(asset, {'qty': 0, 'value': 0})
+                    full_pos[asset]['qty']+=info['qty']
+                    full_pos[asset]['value']+=info['value']
+            snapshot['time'] = t
+            snapshot['positions'][acc_id] = full_pos
+        push_portfolio_snapshot(seed.pm_id(1), snapshot['time'], snapshot['positions'])
 
 if __name__ == "__main__":
     main()
     print('inserting')
     _flush()
-
 

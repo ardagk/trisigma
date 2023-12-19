@@ -53,10 +53,11 @@ class GetReturnComparisonUseCase:
         portf_value = portf_value.resample('D').last()
         portf_value.index = portf_value.index.astype(int) // 10**9
         #convert float timestamp index to int timestamp
+        bch_start_time = float(portf_value.index[0])
         benchmark_value = await self.market_adapter.get_candles(
             instrument=Instrument.stock(benchmark_asset, 'USD'),
             interval=duration.Interval('15m'),
-            timespan=duration.TimeSpan(start_time, end_time))
+            timespan=duration.TimeSpan(bch_start_time, end_time))
         benchmark_value.index = benchmark_value.index.tz_convert('UTC')
         benchmark_value = benchmark_value.resample('D').last()
         benchmark_value.index = benchmark_value.index.astype(int) // 10**9

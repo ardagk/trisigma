@@ -81,12 +81,12 @@ export const OverallWorthView = {
             <div class="centeritem rowflex" style="width: 70%; gap: 30px;">
                 <div class="valuebox flexitem">
                     <h5 class="bold">Overall Worth</h5>
-                    <h1 class="bold">{{ overallWorth }}</h1>
+                    <h1 class="bold">\${{ overallWorth }}</h1>
                     <h5 class="bold" style="text-align: right">{{ overallWorthChange }}</h5>
                 </div>
                 <ul class="flexitem">
-                    <li> Capital: {{ capitalWorth }} </li>
-                    <li> Security: {{ securityWorth }} </li>
+                    <li> Capital: \${{ capitalWorth }} </li>
+                    <li> Security: \${{ securityWorth }} </li>
                 </ul>
             </div>
         </div>
@@ -109,14 +109,15 @@ export const OverallWorthView = {
                 let position = response.data;
                 for (let asset in position) {
                     if (asset === 'USD') {
+                        //round to 2 decimal
                         capitalWorth += position[asset].value;
                     } else {
                         securityWorth += position[asset].value;
                     }
                 }
-                this.overallWorth = capitalWorth + securityWorth;
-                this.capitalWorth = capitalWorth;
-                this.securityWorth = securityWorth;
+                this.overallWorth = Math.round((capitalWorth + securityWorth) * 100) / 100;
+                this.capitalWorth = Math.round(capitalWorth * 100) / 100;
+                this.securityWorth = Math.round(securityWorth * 100) / 100;
             }).catch(error => {
                 console.log(error);
             });

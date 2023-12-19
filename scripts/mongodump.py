@@ -202,10 +202,10 @@ def main():
     push_strategydef("strategy3", "v2.0", {'asset': {'type': '$asset', 'exclude': ['SPY']}, 'exp': {'type': 'range', 'min': 0, 'max': 1}})
     push_pm(seed.pm_id(1), "pm1")
     push_pm(seed.pm_id(2), "pm2")
-    push_account(seed.account_id(0), seed.pm_id(0), "acc3", "Webull", False)
-    push_account(seed.account_id(1), seed.pm_id(1), "acc1", "IBKR", True)
-    push_account(seed.account_id(2), seed.pm_id(1), "acc2", "IBKR", False)
-    push_account(seed.account_id(3), seed.pm_id(1), "acc3", "Webull", False)
+    push_account(seed.account_id(0), seed.pm_id(1), "acc1", "Webull", False)
+    push_account(seed.account_id(1), seed.pm_id(1), "acc2", "IBKR", True)
+    push_account(seed.account_id(2), seed.pm_id(1), "acc3", "IBKR", False)
+    push_account(seed.account_id(3), seed.pm_id(2), "acc4", "Webull", False)
     push_strategy_allocation(seed.pm_id(1), {ST1: 0.5, ST2: 0.3, ST3: 0.1})
     push_strategy_allocation_naming(seed.pm_id(1), {ST1: "first strategy", ST2: "second strategy", ST3: "third strategy"})
 
@@ -215,7 +215,8 @@ def main():
     full_pos = {}
     historic_pos = {}
     for i in range(1, 4):
-        historic_pos[str(seed.account_id(i-1))] = []
+        account_id = str(seed.account_id(i-1))
+        historic_pos[account_id] = []
         exposure_table = ExposureTable(
                 {ST1:Exposure(alloc={'AAPL': 0.3}, buffer={}),
                  ST2:Exposure(alloc={'SPY': -1}, buffer={}),
@@ -253,7 +254,7 @@ def main():
             push_trader_comment(trader_id, deepcopy(comm))
         
         positions = generate_positions(orders, start, end, init_balance, record_duration)
-        historic_pos[str(seed.account_id(i-1))].append(positions)
+        historic_pos[account_id].append(positions)
         last_positions.append(positions[-1])
 
         #Strategy 2
@@ -280,7 +281,7 @@ def main():
             push_trader_comment(trader_id, deepcopy(comm))
         
         positions = generate_positions(orders, start, end, init_balance, record_duration)
-        historic_pos[str(seed.account_id(i-1))].append(positions)
+        historic_pos[account_id].append(positions)
         last_positions.append(positions[-1])
 
         #Strategy 3
@@ -307,7 +308,7 @@ def main():
             push_trader_comment(trader_id, deepcopy(comm))
         
         positions = generate_positions(orders, start, end, init_balance, record_duration)
-        historic_pos[str(seed.account_id(i-1))].append(positions)
+        historic_pos[account_id].append(positions)
         last_positions.append(positions[-1])
 
         full_acc_pos = {}
@@ -315,18 +316,24 @@ def main():
             for asset, info in pos['position'].items():
                 full_acc_pos.setdefault(asset, 0)
                 full_acc_pos[asset] += info['qty']
-        full_pos[str(seed.account_id(i-1))] = full_acc_pos
+        full_pos[account_id] = full_acc_pos
+
+    push_portfolio_pos(seed.pm_id(1), full_pos)
         
     snapshots = []
     account_ids = list(historic_pos.keys())
     trader_size = len(historic_pos[account_ids[0]])
-    history_size = len(historic_pos[account_ids[0]][0])
+    history_size = max([len(historic_pos[account_ids[0]][i]) for i in range(trader_size)])
     for i in range(history_size):
         snapshot = {'time': None, 'positions':{}}
         for acc_id in account_ids:
+            trader_indicies = []
+            for ti in range(3):
+                if len(historic_pos[acc_id][ti]) > i:
+                    trader_indicies.append(ti)
             positions = [
                     historic_pos[acc_id][k][i] 
-                    for k in range(trader_size)]
+                    for k in trader_indicies]
             full_pos = {}
             t = None
             for pos in positions:

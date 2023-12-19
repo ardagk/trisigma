@@ -48,7 +48,7 @@ class TraderRepositoryMongo(TraderRepository):
             {'trader_id': trader_id,
              'observation.time': {'$gte': start_time, '$lte': end_time}},
             {'_id': 0, 'trader_id': 0})
-        return [doc['observation'] for doc in list(cur)]
+        return sorted([doc['observation'] for doc in list(cur)], key=lambda doc: doc['time'])
 
     async def push_comment(self, trader_id, comment):
         assert isinstance(comment.get('time'), float), "time does not exist or is not float"
@@ -63,7 +63,7 @@ class TraderRepositoryMongo(TraderRepository):
             {'trader_id': trader_id,
              'comment.time': {'$gte': start_time, '$lte': end_time}},
             {'_id': 0, 'trader_id': 0})
-        return [doc['comment'] for doc in list(cur)]
+        return sorted([doc['comment'] for doc in list(cur)], key=lambda doc: doc['time'])
 
     async def find_traders(self, portfolio_manager_id):
         pipeline = [

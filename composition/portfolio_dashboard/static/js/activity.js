@@ -73,13 +73,10 @@ export const ObservationsView = {
                 return;
             }
             const trader_id = traderMatch.value[0].trader_id;
-            let observationRequest = axios.get('/portfolio/observations', {params: {trader_id: trader_id}});
-            let journalRequest = axios.get('/portfolio/journal', {params: {trader_id: trader_id}});
-            axios.all([observationRequest, journalRequest]).then(axios.spread((...responses) => {
-                this.botObservations = responses[0].data;
-                this.botJournal = responses[1].data;
+            axios.get('/portfolio/observations', {params: {trader_id: trader_id}}).then(response => {
+                this.botObservations = response.data;
                 this.render();
-            })).catch(errors => {
+            }).catch(errors => {
                 console.log(errors);
             });
         },
@@ -145,6 +142,7 @@ export const JournalView = {
         return {
             botJournal: [],
             journalTable: null,
+            lookback: 10,
         }
     },
     methods: {
@@ -153,8 +151,9 @@ export const JournalView = {
                 return;
             }
             const trader_id = traderMatch.value[0].trader_id;
+            const start_time = Math.floor(Date.now() / 1000) - (this.lookback * 24 * 60 * 60);
             axios.get('/portfolio/journal', {
-                params: {trader_id: trader_id}}
+                params: {trader_id: trader_id, start_time: start_time}}
                 ).then(response => {
                     this.botJournal = response.data;
                     for (let i = 0; i < response.data.length; i++) {

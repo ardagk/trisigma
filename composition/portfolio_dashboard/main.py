@@ -106,15 +106,15 @@ async def portfolio_open_orders(trader_id: int):
     return resp
 
 @app.get('/portfolio/journal')
-async def trader_journal(trader_id: int, start_time: Optional[int] = None, end_time: Optional[int] = None):
+async def trader_journal(trader_id: int, start_time: Optional[int] = None, end_time: Optional[int] = None, count=1000):
     usecase = GetTraderJournalUseCase(trader_repo)
-    resp = await usecase.run(trader_id, start_time, end_time)
+    resp = await usecase.run(trader_id, start_time, end_time, count)
     return resp
 
 @app.get('/portfolio/observations')
-async def trader_observations(trader_id: int, start_time: Optional[int] = None, end_time: Optional[int] = None):
+async def trader_observations(trader_id: int, start_time: Optional[int] = None, end_time: Optional[int] = None, count=1000):
     usecase = GetTraderObservationsUseCase(trader_repo)
-    resp = await usecase.run(trader_id, start_time, end_time)
+    resp = await usecase.run(trader_id, start_time, end_time, count)
     return resp
 
 @app.get('/portfolio/bots')

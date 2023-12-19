@@ -11,10 +11,13 @@ class GetTraderJournalUseCase:
 
     async def run(
             self, trader_id, 
-            start_time=None, end_time=None
+            start_time=None, end_time=None, count=1000
             ) -> List[dict]:
 
-        result = await self.trader_repo.get_comments(
-                trader_id=trader_id)
+        comments = await self.trader_repo.get_comments(
+                trader_id=trader_id,
+                start_time=start_time,
+                end_time=end_time)
+        result = comments[-count:]
         return result
 

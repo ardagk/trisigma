@@ -1,3 +1,22 @@
+#page-content {
+  width: 100%;
+  height: 100%;
+}
+#page-loading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  /*background-color: rgba(0, 0, 0, 0.5);*/
+  background-color: var(--background-color-a);
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+
 ::-webkit-scrollbar {
   background: var(--background-color-a-darker);
 }
@@ -142,11 +161,8 @@ label {
 }
 
 .slider-field {
-  background-color: var(--field-background-color);
-  color: var(--field-font-color);
   appearance: none;
   outline: none;
-  border-radius: 5px;
   height: 6px;
   justify-content: flex-end;
   padding: 0px;
@@ -154,8 +170,6 @@ label {
 
 /*change line color of any input type range*/
 .slider-field::-webkit-slider-runnable-track {
-  background: var(--field-font-color);
-  border-radius: 5px;
   height: 6px;
 }
 

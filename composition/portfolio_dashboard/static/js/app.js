@@ -1,11 +1,9 @@
-import { createApp, ref } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js'
-import  'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js'
-
+import { createApp, ref, shallowRef } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js'
 
 export const pm_id = 200000001;
 
 
-let activeFacet = ref('allocation');
+let activeFacet = ref('performance');
 
 const switchFacet = function (target) {
     activeFacet.value = target;
@@ -31,7 +29,7 @@ export const facetframe = {
 
 export const facet = {
     props: ['name'],
-    template: '<div class="facet" v-if="isActive"><slot></slot></div>',
+    template: '<div class="facet" v-show="isActive"><slot></slot></div>',
     computed: {
         isActive() {
             return this.name === activeFacet.value;
@@ -127,7 +125,7 @@ export const SliderField = {
     methods: {
         updateRestriction() {
             const slider = this.$refs.theSlider;
-            slider.style.background = `linear-gradient(to right, white ${this.upperLimit}%, gray ${this.upperLimit}%)`;
+            slider.style.background = `linear-gradient(to right, lightgray ${this.upperLimit}%, dimgray ${this.upperLimit}%)`;
             this.val = Math.min(this.upperLimit, this.val);
             slider.value = this.val;
         }
@@ -155,7 +153,7 @@ export const SliderField = {
 }
 export const ModelForm = {
     template: `
-        <div class="form-option-wrapper" v-for="(option, label, index) in options" :key="index">
+        <div class="form-option-wrapper" v-for="(option, label, index) in options">
                 <label :style="labelStyle">{{ label }}</label>
                 <template v-if="option.type === 'range'">
                     <slider-field :style="fieldStyle" :min="option.min" :max="option.max" :step="option.step"\
@@ -191,14 +189,82 @@ export const ModelForm = {
     updated() {
         for (const [key, value] of Object.entries(this.options))
             this.data[key] = value.value;
+        console.log('updated');
+        console.log(this.data);
+        console.log(this.options);
     },
     mounted() {
         for (const [key, value] of Object.entries(this.options))
             this.data[key] = value.value;
+        console.log('mounted');
+        console.log(this.data);
     }
 }
 
-export const app = createApp({});
+//export const app = createApp({});
+
+export const page = {
+    // this component includes everything about the app, if receives loading event from app it displays loading spinner else it displays the content
+    template: `
+        <div id="page-loading" v-show="isLoading">
+            <div id="loading-wrapper">
+                <div id="loading-text">LOADING</div>
+                <div id="loading-content"></div>
+            </div>
+        </div>
+        <div id="page-content">
+            <slot></slot>
+        </div>
+    `,
+    data() {
+        return {
+            isLoading: true,
+            blockLoading: false,
+        };
+    },
+    mounted() {
+        //watch apps isLoaded property, if it is true then set isLoading to false
+        this.isLoading = this.isLoading && !this.blockLoading;
+        this.$watch(
+            () => this.$root.isLoading,
+            (val) => {
+                this.isLoading = val && !this.blockLoading;
+            }
+        );
+    }
+}
+
+export const app = createApp({
+    data() {
+        return {
+            activeFacet: activeFacet,
+            pm_id: pm_id,
+            loadingViews: {},
+            isLoading: true,
+        };
+    },
+    methods: {
+        viewLoading(key) {
+            this.loadingViews[key] = true;
+            this.isLoading = true;
+        },
+        viewLoaded(key) {
+            delete this.loadingViews[key];
+            this.isLoading = Object.keys(this.loadingViews).length > 0;
+        },
+        wait(promise) {
+            let key = Math.random().toString(36).substring(7);
+            this.viewLoading(key);
+            promise.then(() => {
+                this.viewLoaded(key);
+            }).catch(() => {
+                this.viewLoaded(key);
+            });
+        }
+    },
+    mounted() {
+    }
+});
 app.component('dropdown-field', DropdownField);
 app.component('text-field', TextField);
 app.component('checkbox-field', CheckboxField);
@@ -211,5 +277,6 @@ app.component('facetframe', facetframe);
 app.component('optbar', optbar);
 app.component('contentgrid', contentgrid);
 app.component('tab', tab);
+app.component('page', page);
 
 

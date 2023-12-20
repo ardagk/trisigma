@@ -45,6 +45,28 @@ def generate_trade_data(start, end, asset, prices, qty, duration, meta={}):
     return orders, observations, comments
 
 
+def merge_obs(*observations):
+    observations = deepcopy(list(observations))
+    dfs = []
+    for obs in observations:
+        if not obs: continue
+        for ob in obs:
+            ob.update(ob['observations'])
+            del ob['observations']
+        dfs.append(pd.DataFrame(obs))
+    df = dfs[0]
+    for i in range(1, len(dfs)):
+        df = pd.merge(df, dfs[i], on='time', how='outer')
+    #return records but without the keys that are nan
+    df = df.where((pd.notnull(df)), None)
+    records = df.to_dict(orient='records')
+    for rec in records:
+        for k, v in list(rec.items()):
+            if pd.isna(v):
+                del rec[k]
+    result = [{'time': rec.pop('time'), 'observations': rec} for rec in records]
+    return result
+
 def generate_positions(orders, start, end, init_balance, record_duration):
     positions = []
     balance = init_balance
@@ -244,7 +266,7 @@ def main():
             push_order(Instrument.stock(order['instrument'], 'USD'), order['side'],
                 order['qty'], order['order_type'], account_id=seed.account_id(i),
                 t=order['time'], meta=order['meta'])
-        observations = (obs1 + obs2)
+        observations = merge_obs(obs1,  obs2)
         observations.sort(key=lambda x: x['time'])
         for obs in observations:
             push_trader_observation(trader_id, deepcopy(obs))
@@ -271,7 +293,7 @@ def main():
             push_order(Instrument.stock(order['instrument'], 'USD'), order['side'],
                 order['qty'], order['order_type'], account_id=seed.account_id(i),
                 t=order['time'], meta=order['meta'])
-        observations = (obs1 + obs2)
+        observations = merge_obs(obs1, obs2)
         observations.sort(key=lambda x: x['time'])
         for obs in observations:
             push_trader_observation(trader_id, deepcopy(obs))
@@ -298,7 +320,7 @@ def main():
             push_order(Instrument.stock(order['instrument'], 'USD'), order['side'],
                 order['qty'], order['order_type'], account_id=seed.account_id(i),
                 t=order['time'], meta=order['meta'])
-        observations = (obs1 + obs2)
+        observations = merge_obs(obs1, obs2)
         observations.sort(key=lambda x: x['time'])
         for obs in observations:
             push_trader_observation(trader_id, deepcopy(obs))

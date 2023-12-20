@@ -16,7 +16,19 @@ export function createLineChart(elemId, label, time, data){
                 color: fontColor,
             }]
         },
-        options: {responsive: true, maintainAspectRatio: false}
+        //its a timeseries with ms timestamp
+        options: {
+            scales: {
+                x: {
+                    type: 'time',
+                    time: {
+                        unit: 'day',
+                        tooltipFormat: 'MMM DD YYYY'
+                    }
+                }
+            },
+            responsive: true,
+            maintainAspectRatio: false}
     });
 }
 

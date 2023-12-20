@@ -1,7 +1,6 @@
 import { app, pm_id } from './app.js';
 import { createTable } from './util.js';
 import { ref } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js'
-import 'https://cdnjs.cloudflare.com/ajax/libs/gridjs/6.0.6/gridjs.production.min.js'
 
 var selectedAccount = ref(null);
 var selectedStrategy = ref(null);
@@ -25,7 +24,7 @@ export const ActivityOptions = {
     },
     methods: {
         update () {
-            axios.get('/portfolio/bots', {
+            let promise = axios.get('/portfolio/bots', {
                 params: {portfolio_manager_id: pm_id}
             }).then(response => {
                 this.bots = response.data;
@@ -35,6 +34,7 @@ export const ActivityOptions = {
                 this.selectedStrategy = this.strategies[0];
                 this.onSelection();
             });
+            return promise;
         },
 
         onSelection () {
@@ -51,7 +51,7 @@ export const ActivityOptions = {
         },
     },
     mounted: function () {
-        this.update();
+        this.$root.wait(this.update());
     },
 };
 
@@ -84,22 +84,40 @@ export const ObservationsView = {
             if (this.chartView === null) {
                 //observations schema [{'time': time, 'observations': {'indicator1': value1, 'indicator2': value2, ...}}, ...]
                 let time = [];
-                let data = [];
+                let data = {};
+                let names = [];
+                const null_value = undefined;
                 for (let i = 0; i < this.botObservations.length; i++) {
-                    let entry = this.botObservations[i];
-                    time.push(entry.time);
-                    data.push(entry.observation);
-                }
-                let indicators = Object.keys(data[0]);
-                let datasets = [];
-                for (let i = 0; i < indicators.length; i++) {
-                    let indicatorData = [];
-                    for (let j = 0; j < data.length; j++) {
-                        indicatorData.push(data[j][indicators[i]]);
+                    if (i % 10 !== 0) {
+                        continue;
                     }
+                    time.push(new Date(parseInt(this.botObservations[i].time * 1000)));
+                    let keys = Object.keys(this.botObservations[i].observations);
+                    for (let j = 0; j < keys.length; j++) {
+                        let k = keys[j];
+                        if (!names.includes(k)) {
+                            //if doesn't exist fill with nulls for previous times
+                            names.push(k);
+                            data[k] = [];
+                            for (let j = 0; j < i; j++) data[k].push(null_value);
+                        } 
+                    }
+                    for (let j = 0; j < names.length; j++) {
+                        name = names[j];
+                        if (this.botObservations[i].observations[name] === undefined) {
+                            data[name].push(null_value);
+                        } else {
+                            data[name].push(this.botObservations[i].observations[name]);
+                        }
+                    }
+                }
+                let datasets = [];
+                let colors = ['gray', 'cyan']
+                for (let i = 0; i < names.length; i++) {
                     datasets.push({
-                        label: indicators[i],
-                        data: indicatorData,
+                        label: names[i],
+                        data: data[names[i]],
+                        borderColor: colors[i % colors.length],
                     });
                 }
                 let ctx = document.getElementById('activity-observations-chart').getContext('2d');
@@ -112,6 +130,96 @@ export const ObservationsView = {
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
+                        pointRadius: 0,
+                        layout: {
+                            padding: {
+                                left: 10,
+                                right: 13,
+                            }
+                        },
+                        scales: {
+                            x: {
+                                //time cartesian axis
+                                type: 'time',
+                                time: {
+                                    unit: 'hour',
+                                    displayFormats: {
+                                        hour: 'DD MMM HH:mm',
+                                    },
+                                },
+                                ticks: {
+                                    maxRotation: 0,
+                                    minRotation: 0,
+                                    autoSkip: true,
+                                },
+                                min: Date.now() - 1000*60*60*24,
+                                max: time[time.length - 1],
+                            },
+                            y: {
+                                type: 'linear',
+                                min: function (context) {
+                                    let chart = context.chart;
+                                    let datasets = chart.data.datasets;
+                                    let min = null;
+                                    for(var i=0; i<datasets.length; i++) {
+                                        let dataset=datasets[i]
+                                        if(chart.data.datasets[i].hidden) {
+                                            continue;
+                                        }
+
+                                        dataset.data.forEach(function(d) {
+                                            if(d<min || min == null) {
+                                                min = d
+                                            }
+                                        })
+                                    }
+                                    return min * 0.8;
+                                },
+                                max: function (context) {
+                                    let chart = context.chart;
+                                    let datasets = chart.data.datasets;
+                                    let max = null;
+                                    for(var i=0; i<datasets.length; i++) {
+                                        let dataset=datasets[i]
+                                        if(chart.data.datasets[i].hidden) {
+                                            continue;
+                                        }
+
+                                        dataset.data.forEach(function(d) {
+                                            if(d>max || max == null) {
+                                                max = d
+                                            }
+                                        })
+                                    }
+                                    return max * 1.2;
+                                },
+                                    
+
+                                ticks: {
+                                    count: 10,
+                                },
+                            },
+                        },
+                        plugins: {
+                            zoom: {
+                                limits: {
+                                    x: {min: time[0], max: time[time.length - 1], minRange: 1000*60*60*6, maxRange: 1000*60*60*24},
+                                },
+                                zoom: {
+                                    wheel: {
+                                        enabled: true,
+                                    },
+                                    pinch: {
+                                        enabled: true,
+                                    },
+                                    mode: 'x',
+                                },
+                                pan: {
+                                    enabled: true,
+                                    mode: 'x',
+                                },
+                            },
+                        },
                     }
                 });
             } else {
@@ -214,7 +322,6 @@ export const TransactionsView = {
         },
         render () {
             //create a table for the journal using gridjs
-            console.log(this.botTransactions);
             this.transactionsTable = createTable('activity-transactions-table', {
                 records: this.botTransactions,
             }); 
@@ -222,7 +329,6 @@ export const TransactionsView = {
     },
     mounted: function () {
         this.$watch(() => traderMatch.value, this.onSelection);
-        console.log('mounted');
     }
 
 };

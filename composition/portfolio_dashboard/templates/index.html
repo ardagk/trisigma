@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8">
     <title>Portfolio Dashboard</title>
+    <link rel="icon" href="data:;base64,=">
     <link rel="stylesheet" href="static/css/theme.css"/>
     <link rel="stylesheet" href="static/css/global.css"/>
     <link rel="stylesheet" href="static/css/layout.css"/>
@@ -11,39 +12,47 @@
   <body>
 
     <div class="container" id="app">
-      <navbar>
-        <navitem title="Performance" target="performance"></navitem>
-        <navitem title="Allocation" target="allocation"></navitem>
-        <navitem title="Activity" target="activity"></navitem>
-      </navbar>
-      <facetframe>
-          <facet name=performance title="Performance">
-            <optbar> </optbar>
-            <contentgrid grid=performance-grid>
-                <tab title="key stats" region="leftmost"><KeyStatsView/></tab>
-                <tab title="overall worth" region="upperright"><OverallWorthView/></tab>
-                <tab title="strategy results" region="lowerright"><StrategyResultView/></tab>
-            </contentgrid>
-          </facet>
-          <facet name=allocation title="Allocation">
-            <optbar> </optbar>
-            <contentgrid grid=allocation-grid>
-                <tab title="strategy allocator" region="upperleft"><AllocatorView/></tab>
-                <tab title="allocation chart" region="lowerleft"><AllocationPieView/></tab>
-                <tab title="empty" region="rightmost"><EmptyView/></tab>
-            </contentgrid>
-          </facet>
-          <facet name=activity title="Activity">
-            <optbar><ActivityOptions/></optbar>
-            <contentgrid grid=activity-grid>
-                <tab title="observations" region="upperright"><JournalView/></tab>
-                <tab title="journal" region="upperleft"><ObservationsView/></tab>
-                <tab title="transactions" region="bottom"><TransactionsView/></tab>
-            </contentgrid>
-          </facet>
-      </facetframe>
+      <page>
+        <navbar>
+          <navitem title="Performance" target="performance"></navitem>
+          <navitem title="Allocation" target="allocation"></navitem>
+          <navitem title="Activity" target="activity"></navitem>
+        </navbar>
+        <facetframe>
+            <facet name=performance title="Performance">
+              <optbar> </optbar>
+              <contentgrid grid=performance-grid>
+                  <tab title="key stats" region="leftmost"><KeyStatsView/></tab>
+                  <!--<tab title="overall worth" region="upperright"><OverallWorthView/></tab>-->
+                  <tab title="overall worth" region="upperright"><OverallWorthView/></tab>
+                  <tab title="strategy results" region="lowerright"></tab>
+              </contentgrid>
+            </facet>
+            <facet name=allocation title="Allocation">
+              <optbar> </optbar>
+              <contentgrid grid=allocation-grid>
+                  <tab title="strategy allocator" region="upperleft"><AllocatorView/></tab>
+                  <tab title="allocation chart" region="lowerleft"><AllocationPieView/></tab>
+                  <tab title="empty" region="rightmost"><EmptyView/></tab>
+              </contentgrid>
+            </facet>
+            <facet name=activity title="Activity">
+              <optbar><ActivityOptions/></optbar>
+              <contentgrid grid=activity-grid>
+                  <tab title="observations" region="upperright"><JournalView/></tab>
+                  <tab title="journal" region="upperleft"><ObservationsView/></tab>
+                  <tab title="transactions" region="bottom"><TransactionsView/></tab>
+              </contentgrid>
+            </facet>
+        </facetframe>
+      </page> 
     </div>
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.5.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/1.0.0/chartjs-plugin-zoom.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-adapter-moment/1.0.0/chartjs-adapter-moment.min.js"></script>
     <script type="module" src="static/js/app.js"></script>
     <script type="module" src="static/js/performance.js"></script>
     <script type="module" src="static/js/allocation.js"></script>

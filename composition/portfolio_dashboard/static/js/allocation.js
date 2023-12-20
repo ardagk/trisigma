@@ -1,6 +1,7 @@
 import { app } from './app.js';
 import { pm_id } from './app.js';
 import { toRaw } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js'
+import { shallowRef } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js'
 
 // Allocator Views
 export const AllocatorView = {
@@ -10,11 +11,11 @@ export const AllocatorView = {
             <canvas class="line-chart-canvas" ref="pieChart"></canvas>
         </div>
         <div class="flexitem colflex" style="flex-basis: 40%">
-            <div v-if="focus()" class="colflex fw" :key="activeStrategyConfig.name + activeStrategyConfig.strategy">
+            <div v-if="focus()" class="colflex fw" :key="activeStrategyConfig.qualifiedName + activeStrategyConfig.strategy">
                 <dropdown-field :value="activeStrategyConfig.strategy" :options="Object.keys(availableStrategies)"\
                  @update="strategyTypeChange"/>
                 <model-form :options="genericParams" @update="genericParamChange"/>
-                <model-form :options="activeStrategyConfig.options" @update="strategyParamChange"/>
+                <model-form :options="strategyParams" :key="counter" @update="strategyParamChange"/>
                 <div>
                     <button type="button" @click="onRemoveStrategy">Remove</button>
                     <button :disabled="activeStrategyConfig.new" type="button" @click="onRevertStrategy">Revert</button>
@@ -45,6 +46,8 @@ export const AllocatorView = {
                 name: { type: 'text', banned: [], default: '', value: ''},
                 allocation: { type: 'range', min: 0, max: 100, step: 1, available: 100, value: 0},
             },
+            strategyParams: {},
+            counter: 0,
         };
     },
     methods: {
@@ -56,7 +59,7 @@ export const AllocatorView = {
             const req2 = axios.get('/portfolio/allocation', {
                 params: { portfolio_manager_id: pm_id }
             })
-            axios.all([req1, req2]).then(axios.spread((definitionResp, allocationResp) => {
+            let promise = axios.all([req1, req2]).then(axios.spread((definitionResp, allocationResp) => {
                 this.availableStrategies = this._processStrategyDefinition(definitionResp.data);
                 this.existingStrategies = this._processStrategyAllocation(allocationResp.data);
                 this.originalStrategies = JSON.parse(JSON.stringify(this.existingStrategies));
@@ -67,6 +70,7 @@ export const AllocatorView = {
             })).catch(error => {
                 console.log(error);
             });
+            return promise;
         },
         _processStrategyAllocation(resp) {
             const strategyConfigs = [];
@@ -153,7 +157,6 @@ export const AllocatorView = {
             this.updateFreeAllocation();
             let label = this.existingStrategies.map(strategy => strategy.name);
             label.push('free');
-            console.log(label);
             let data = this.existingStrategies.map(strategy => strategy.allocation);
             let labelDisp = label.slice();
             for (let i = 0; i < label.length; i++)
@@ -176,25 +179,26 @@ export const AllocatorView = {
                 let chart = new Chart(ctx, {
                     type: 'pie',
                     data: { labels: labelDisp, datasets: [{label: label, data: data, backgroundColor: colors}]},
-                    options: {animations: false, responsive: true, maintainAspectRatio: false,
+                    options: {animation: false,
+                         responsive: true, maintainAspectRatio: false,
                         layout: {padding: {top: 10, bottom: 10, left: 10, right: 10}}},
                 });
                 chart.legend.options.position = 'right';
                 chart.legend.options.align = 'start';
                 chart.legend.options.labels.fontSize = 10;
                 chart.update();
-                this.chart = chart;
+                //Object.seal(chart);
+                this.chart = shallowRef(chart);
                 chart.options.onClick = (evt, item) => {
                     if (!this.paramsVerified) return;
                     if (item.length === 0) return;
-                    const label = item[0]._model.label;
+                    const label = this.chart.data.datasets[0].label[item[0].index];
                     this.onStrategySelection(label);
                 }
             }
             this.chart.data.datasets[0].data = data;
             this.chart.data.datasets[0].label = label;
             this.chart.data.datasets[0].backgroundColor = colors;
-            console.log(this.chart.data.datasets[0].backgroundColor);
             this.chart.data.labels = labelDisp;
             if (this.focus()){
                 const labelIndex = this.chart.data.datasets[0].label.indexOf(this.activeStrategyConfig.name);
@@ -206,12 +210,12 @@ export const AllocatorView = {
                 this.chart.data.datasets[0].data[labelIndex] = this.activeStrategyConfig.allocation;
                 this.chart.data.datasets[0].data[freeIndex] = this.freeAllocation;
                 this.chart.update();
-                this.chart.getDatasetMeta(0).data[freeIndex]._model.outerRadius -= 10;
-                this.chart.getDatasetMeta(0).data[labelIndex]._model.outerRadius += 10;
+                //this.chart.getDatasetMeta(0).data[freeIndex].outerRadius -= 10;
+                //this.chart.getDatasetMeta(0).data[labelIndex].outerRadius += 10;
             } else {
                 const freeIndex = this.chart.data.labels.indexOf('free');
                 this.chart.update();
-                this.chart.getDatasetMeta(0).data[freeIndex]._model.outerRadius -= 10;
+                //this.chart.getDatasetMeta(0).data[freeIndex].outerRadius -= 10;
             }
         },
         updateFreeAllocation() {
@@ -237,8 +241,7 @@ export const AllocatorView = {
                 allocation: alloc
             };
             this.existingStrategies.splice(0, 0, newStrategyConfig);
-            this.activeStrategyConfig = newStrategyConfig;
-            this.renderView();
+            this.onStrategySelection(name);
         },
         onRevertStrategy () {
             let name = this.activeStrategyConfig.qualifiedName;
@@ -246,6 +249,9 @@ export const AllocatorView = {
                 if (value.qualifiedName === name) {
                     this.activeStrategyConfig.options = JSON.parse(JSON.stringify(value.options));
                     this.activeStrategyConfig.strategy = value.strategy;
+                    this.strategyParams = {}
+                    this.strategyParams = JSON.parse(JSON.stringify(this.activeStrategyConfig.options));
+                    this.counter += 1;
                     this.renderView();
                 }
             }
@@ -265,9 +271,16 @@ export const AllocatorView = {
             } else {
                 this.activeStrategyConfig = this.existingStrategies.filter(
                     strategy => strategy.name === name)[0]; 
+                this.updateFreeAllocation();
                 this.genericParams.name.value = this.activeStrategyConfig.name;
+                const bannedNames = [];
+                for (let strategy of this.existingStrategies)
+                    if (strategy.name != name)
+                        bannedNames.push(strategy.name);
+                this.genericParams.name.banned = bannedNames;
                 this.genericParams.allocation.value = this.activeStrategyConfig.allocation;
                 this.genericParams.allocation.available = this.freeAllocation + this.activeStrategyConfig.allocation;
+                this.strategyParams = JSON.parse(JSON.stringify(this.activeStrategyConfig.options));
             }
             this.renderView();
         },
@@ -279,6 +292,7 @@ export const AllocatorView = {
                 option.value = option.value;
             }
             this.activeStrategyConfig.options = options;
+            this.strategyParams = JSON.parse(JSON.stringify(this.activeStrategyConfig.options));
         },
         genericParamChange(data) {
             //update params, if strategy has changed update strategy param form
@@ -294,7 +308,7 @@ export const AllocatorView = {
         }
     },
     mounted () {
-        this.update();
+        this.$root.wait(this.update());
     },
 };
 export const AllocationPieView = {

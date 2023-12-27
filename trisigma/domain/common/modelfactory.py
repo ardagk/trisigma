@@ -30,6 +30,11 @@ def _construct_inner(klass, d):
         for k in dcp:
             dcp[k] = _construct_inner(type(dcp[k]), dcp[k])
         return dcp
+    elif hasattr(klass, '__dict__') and klass.__dict__.get('_name') == 'Dict':
+        dcp = deepcopy(d)
+        for k in dcp.keys():
+            dcp[k] = _construct_inner(klass.__args__[1], dcp[k])
+        return dcp
     elif klass == list:
         return [_construct_inner(type(e), e) for e in d]
     elif hasattr(klass, '__dataclass_fields__'):

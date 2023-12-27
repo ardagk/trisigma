@@ -237,18 +237,17 @@ def main():
     full_pos = {}
     historic_pos = {}
     for i in range(1, 4):
-        account_id = str(seed.account_id(i-1))
+        account_id = seed.account_id(i-1)
         historic_pos[account_id] = []
         exposure_table = ExposureTable(
                 {ST1:Exposure(alloc={'AAPL': 0.3}, buffer={}),
                  ST2:Exposure(alloc={'SPY': -1}, buffer={}),
                  ST3:Exposure(alloc={'TESLA': 1}, buffer={})},
                 {ST1: 0.5, ST2: 0.3, ST3: 0.1})
-        push_exposure_table(account_id=seed.account_id(i), exposure_table=exposure_table)
-
-        push_trader(seed.account_id(i), ST1, T2, seed.trader_id(1 + (i-1)*3))
-        push_trader(seed.account_id(i), ST2, T2, seed.trader_id(2 + (i-1)*3))
-        push_trader(seed.account_id(i), ST3, T2, seed.trader_id(3 + (i-1)*3))
+        push_exposure_table(account_id=account_id, exposure_table=exposure_table)
+        push_trader(account_id, ST1, T2, seed.trader_id(1 + (i-1)*3))
+        push_trader(account_id, ST2, T2, seed.trader_id(2 + (i-1)*3))
+        push_trader(account_id, ST3, T2, seed.trader_id(3 + (i-1)*3))
 
         last_positions = []
         #Strategy 1
@@ -264,7 +263,7 @@ def main():
         orders.sort(key=lambda x: x['time'])
         for order in orders:
             push_order(Instrument.stock(order['instrument'], 'USD'), order['side'],
-                order['qty'], order['order_type'], account_id=seed.account_id(i),
+                order['qty'], order['order_type'], account_id=account_id,
                 t=order['time'], meta=order['meta'])
         observations = merge_obs(obs1,  obs2)
         observations.sort(key=lambda x: x['time'])
@@ -291,7 +290,7 @@ def main():
         orders.sort(key=lambda x: x['time'])
         for order in orders:
             push_order(Instrument.stock(order['instrument'], 'USD'), order['side'],
-                order['qty'], order['order_type'], account_id=seed.account_id(i),
+                order['qty'], order['order_type'], account_id=account_id,
                 t=order['time'], meta=order['meta'])
         observations = merge_obs(obs1, obs2)
         observations.sort(key=lambda x: x['time'])
@@ -318,7 +317,7 @@ def main():
         orders.sort(key=lambda x: x['time'])
         for order in orders:
             push_order(Instrument.stock(order['instrument'], 'USD'), order['side'],
-                order['qty'], order['order_type'], account_id=seed.account_id(i),
+                order['qty'], order['order_type'], account_id=account_id,
                 t=order['time'], meta=order['meta'])
         observations = merge_obs(obs1, obs2)
         observations.sort(key=lambda x: x['time'])
@@ -338,7 +337,7 @@ def main():
             for asset, info in pos['position'].items():
                 full_acc_pos.setdefault(asset, 0)
                 full_acc_pos[asset] += info['qty']
-        full_pos[account_id] = full_acc_pos
+        full_pos[str(account_id)] = full_acc_pos
 
     push_portfolio_pos(seed.pm_id(1), full_pos)
         
@@ -365,7 +364,7 @@ def main():
                     full_pos[asset]['qty']+=info['qty']
                     full_pos[asset]['value']+=info['value']
             snapshot['time'] = t
-            snapshot['positions'][acc_id] = full_pos
+            snapshot['positions'][str(acc_id)] = full_pos
         push_portfolio_snapshot(seed.pm_id(1), snapshot['time'], snapshot['positions'])
 
 if __name__ == "__main__":

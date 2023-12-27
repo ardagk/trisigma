@@ -53,7 +53,8 @@ class RabbitClientAdapter:
                 receiver=dict(
                     exchange_name=self._exchange,
                     exchange_type="direct",
-                    queue_name=self._queue,
+                    #queue_name=self._queue,
+                    queue_name=uuid.uuid4().hex,
                 )
             ),
         )
@@ -73,17 +74,18 @@ class RabbitClientAdapter:
             self._logger.error("Error encoding request: %s" % e, exc_info=True)
             raise
         adapter = self._get_rpc_adapter(target)
+        assert len(adapter.consumers.keys()) == 1
+        recv_queue = list(adapter.consumers.keys())[0]
         try:
             resp = await adapter.rpc(
                 body=payload,
-                receive_queue=self._queue,
+                receive_queue=recv_queue,
                 publish_exchange=self._exchange,
                 ttl=100,
                 publisher_max_retry_count=0,
                 timeout=10)
         except Exception as e:
-            print('-----------eeRrror---------')
-            print(e)
+            self._logger.error('RPC call error: ' + str(e))
             return
         try:
             data = json.loads(resp.decode())

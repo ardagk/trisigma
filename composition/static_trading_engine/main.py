@@ -27,7 +27,8 @@ if __name__ == '__main__':
     driver = AlgoTradingEngine(
         uri = RABBITMQ_URI,
         strategy_executor = StaticTradingExecutor(),
-        trading_adapter = trading_adapter
+        trading_adapter = trading_adapter,
+        trader_repository = trader_repository
         )
     loop = asyncio.get_event_loop()
     loop.create_task(driver.start())

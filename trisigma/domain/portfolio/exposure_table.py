@@ -2,6 +2,7 @@ import hashlib
 import json
 from copy import deepcopy
 from dataclasses import dataclass, field
+from typing import Dict, Any
 
 @dataclass(frozen=True)
 class Exposure:
@@ -83,7 +84,7 @@ class Exposure:
 @dataclass(frozen=True)
 class ExposureTable:
 
-    exposures: dict = field(default_factory=lambda: {})
+    exposures: Dict[Any, Exposure] = field(default_factory=lambda: {})
     weights: dict = field(default_factory=lambda: {})
 
     def aggregate(self):

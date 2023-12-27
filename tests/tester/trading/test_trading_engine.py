@@ -50,14 +50,41 @@ class MockTradingAdapter(TradingPort):
     async def send_modify_request(self, account_id, signal_id, changes):
         self.calls.append(('send_modify_request', (account_id, signal_id, changes)))
 
+class MockTraderRepository():
+
+    async def create_trader(self, trader: Trader):...
+
+    async def get_trader(self, trader_id: int):...
+
+    async def add_strategy(self, strategy):...
+
+    async def get_strategies(self): return []
+
+    async def push_observation(self, trader_id: int, data: dict):...
+
+    async def get_observations(
+            self, trader_id: int, start_time = None,
+            end_time = None) -> list: return []
+
+    async def push_comment(self, trader_id, comment: dict):...
+
+    async def get_comments(
+            self, trader_id, start_time = None,
+            end_time = None) -> list: return []
+
+    async def find_comments(self, portfolio_manager_id: int) -> list: return []
+
+    async def find_traders(self, portfolio_manager_id: int): return []
+
 def test_spawn_remove_trader():
     loop = asyncio.get_event_loop()
     strategy_executor = MockStrategyExecutor()
     trading_adapter = MockTradingAdapter()
+    trader_repository = MockTraderRepository()
     uri = 'amqp://null:null@host:port/'
-    trading_engine = AlgoTradingEngine(uri, strategy_executor, trading_adapter)
+    trading_engine = AlgoTradingEngine(uri, strategy_executor, trading_adapter, trader_repository)
     resp = loop.run_until_complete(trading_engine.spawn_instance(123, {'asset': 'AAPL'}))
-    assert resp['trader_id'] == 1
+    assert resp == 1
     assert strategy_executor.calls[0] == ('spawn_trader', (123, {'asset': 'AAPL'}))
     loop.run_until_complete(trading_engine.remove_instance(1))
     assert strategy_executor.calls[1] == ('remove_trader', (1))
@@ -67,8 +94,9 @@ def test_action_handling():
     strategy_executor = MockStrategyExecutor()
     strategy_behavior = MockStrategyBehavior({}, 123, strategy_executor.action_queue)
     trading_adapter = MockTradingAdapter()
+    trader_repository = MockTraderRepository()
     uri = 'amqp://null:null@host:port/'
-    trading_engine = AlgoTradingEngine(uri, strategy_executor, trading_adapter)
+    trading_engine = AlgoTradingEngine(uri, strategy_executor, trading_adapter, trader_repository)
     strategy_behavior.buy('AAPL', 1)
     async def run_worker():
         ilen = len(trading_adapter.calls)
@@ -90,8 +118,9 @@ def test_event_handling():
     strategy_executor = MockStrategyExecutor()
     strategy_behavior = MockStrategyBehavior({}, 123, strategy_executor.action_queue)
     trading_adapter = MockTradingAdapter()
+    trader_repository = MockTraderRepository()
     uri = 'amqp://null:null@host:port/'
-    trading_engine = AlgoTradingEngine(uri, strategy_executor, trading_adapter)
+    trading_engine = AlgoTradingEngine(uri, strategy_executor, trading_adapter, trader_repository)
     signal_id = strategy_behavior.buy('AAPL', 1)
     strategy_executor.instances.add_instance(strategy_behavior, '123')
     strategy_behavior._map_signal_id(signal_id, "1")

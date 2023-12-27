@@ -18,6 +18,7 @@ class BrokerageMiddleware():
         self.name = f'{str(account_id)}'
         self.rpc_adapter = RabbitServerAdapter(
                 uri=uri, exchange='brokerage', server_name=self.name,
+                queue_name='queue-acc-'+str(account_id),
                 prefetch_count=5)
         self.publish_adapter = RabbitPublisherAdapter(
                 uri=uri, exchange='brokerage', publisher_name=self.name)
@@ -68,7 +69,7 @@ class BrokerageMiddleware():
                 order_repository = self.order_repository,
                 brokerage_adapter = self.brokerage_adapter)
         resp = await usecase.run(self.account_id, portfolio_manager_id)
-        return resp
+        print('done')
 
     async def order_status_update(self, order_ref, status, price):
         usecase = OrderStatusUpdateUseCase(

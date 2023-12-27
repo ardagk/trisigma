@@ -6,8 +6,9 @@ from trisigma.domain.common import modelfactory
 
 class AlgoTradingEngine():
 
-    def __init__(self, uri, strategy_executor, trading_adapter):
+    def __init__(self, uri, strategy_executor, trading_adapter, trader_repository):
         self.trading_adapter = trading_adapter
+        self.trader_repository = trader_repository
         self.strategy_executor = strategy_executor
         self.executer_worker = None
         self.rpc_adapter = RabbitServerAdapter(
@@ -29,7 +30,8 @@ class AlgoTradingEngine():
 
     async def spawn_instance(self, account_id, config):
         trader = self.strategy_executor.spawn_instance(account_id, config)
-        return modelfactory.deconstruct(trader)
+        await self.trader_repository.create_trader(trader)
+        return trader.trader_id
 
     async def remove_instance(self, trader_id):
         self.strategy_executor.remove_instance(trader_id)

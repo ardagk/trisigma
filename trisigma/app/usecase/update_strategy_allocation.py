@@ -33,12 +33,12 @@ class UpdateStrategyAllocationUseCase:
         to_remove = [(from_strategy_uri(t.strategy_uri)[0], t.trader_id)
                      for t in all_traders if t.strategy_uri not in uris
                      or t.account_id not in account_ids]
-        search_key = lambda t: (
-                t.strategy_uri == strategy_uri
-                and t.account_id == account_id)
         to_spawn = []
         for strategy_uri in uris:
             for account_id in account_ids:
+                search_key = lambda t: (
+                        t.strategy_uri == strategy_uri
+                        and t.account_id == account_id)
                 if not list(filter(search_key, all_traders)): #type: ignore
                     strategy, config = from_strategy_uri(strategy_uri)
                     to_spawn.append((account_id, strategy, config))

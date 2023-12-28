@@ -1,6 +1,6 @@
 def to_strategy_uri(base: str, config: dict) -> str:
     if not config:
-        return base.lower()
+        return base
     conf_tuple = sorted(config.items(), key=lambda x: x[0])
     uri = base + '?'
     for k, v in conf_tuple:
@@ -9,7 +9,7 @@ def to_strategy_uri(base: str, config: dict) -> str:
         assert '?' not in str(v), "value can't include '?'"
         assert '&' not in str(v), "value can't include '&'"
         uri += f"{k}={v}&"
-    uri = uri[:-1].lower().replace(' ', '_')
+    uri = uri[:-1].replace(' ', '_')
     return uri
 
 def from_strategy_uri(uri: str):

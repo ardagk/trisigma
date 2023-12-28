@@ -74,21 +74,14 @@ export const AllocatorView = {
         },
         _processStrategyAllocation(resp) {
             const strategyConfigs = [];
-            for (let [strategyUri, allocation] of Object.entries(resp)) {
-                const strategyName = strategyUri.split('?')[0];
-                const name = strategyName; //XXX
-                const params = {};
-                for (let param of strategyUri.split('?')[1].split('&')) {
-                    let key = param.split('=')[0];
-                    let val = param.split('=')[1];
-                    params[key] = val;
-                }
-                const options = JSON.parse(
-                    JSON.stringify(
-                        this.availableStrategies[strategyName].options
-                    )
-                );
-                for (let option of Object.values(options)) {
+            for (let [slotId, details] of Object.entries(resp)) {
+                const strategyName = details.strategy;
+                const name = details.name;
+                const allocation = details.allocation;
+                const options = JSON.parse(JSON.stringify(
+                    this.availableStrategies[strategyName].options));
+                for (let k of Object.keys(options)) {
+                    options[k].value = details.config[k];
                 }
                 strategyConfigs.push({
                     name: name,
@@ -148,8 +141,27 @@ export const AllocatorView = {
             return availableStrategies;
         },
         saveStrategyAllocation() {
-            const allocCopy = JSON.parse(JSON.stringify(this.existingStrategies));
-            this.originalStrategies = allocCopy;
+            const finalAlloc = {};
+            for (let i = 0; i < this.existingStrategies.length; i++) {
+                const value = JSON.parse(JSON.stringify(this.existingStrategies[i]));
+                value.config = {};
+                for (let [cKey, cVal] of Object.entries(value.options)) {
+                    value.config[cKey] = cVal.value;
+                }
+                delete value.options;
+                delete value.new;
+                delete value.qualifiedName;
+                finalAlloc[value.name] = value;
+            }
+            axios.post('/portfolio/allocation', {
+                portfolio_manager_id: pm_id,
+                allocation: finalAlloc
+            }).then(resp => {
+                console.log(resp);
+                this.update();
+            }).catch(error => {
+                console.log(error);
+            });
         },
         //updater
         renderView () {

@@ -22,25 +22,22 @@ class PortfolioRepositoryMongo(PortfolioRepository):
         strategy_allocation = StrategyAllocation(res['allocation'])
         return strategy_allocation
 
-    async def get_strategy_allocation_namings(self, portfolio_manager_id):
-        res = self.db['strategy_allocation'].find_one(
-            {'portfolio_manager_id': portfolio_manager_id})
-        assert bool(res)
-        namings = res['namings']
-        return namings
+    async def get_active_strategies(self, portfolio_manager_id: str):
+        strategies = self.db['active_strategies'].find_one({'portfolio_manager_id': portfolio_manager_id})
+        assert isinstance(strategies, dict) and isinstance(strategies.get('active_strategies'), dict)
+        return strategies['active_strategies']
 
-    async def update_strategy_allocation(
+    async def set_active_strategies(self, portfolio_manager_id: str, strategies: dict):
+        self.db['active_strategies'].update_one(
+            {'portfolio_manager_id': portfolio_manager_id},
+            {'$set': {'active_strategies': strategies}},
+            upsert=True)
+
+    async def set_strategy_allocation(
             self, portfolio_manager_id, strategy_allocation):
         self.db['strategy_allocation'].update_one(
             {'portfolio_manager_id': portfolio_manager_id},
             {'$set': {'allocation': strategy_allocation}},
-            upsert=True)
-
-    async def update_strategy_allocation_namings(
-            self, portfolio_manager_id, namings):
-        self.db['strategy_allocation'].update_one(
-            {'portfolio_manager_id': portfolio_manager_id},
-            {'$set': {'namings': namings}},
             upsert=True)
 
     async def get_portfolio_position(self, portfolio_manager_id):

@@ -189,15 +189,10 @@ export const ModelForm = {
     updated() {
         for (const [key, value] of Object.entries(this.options))
             this.data[key] = value.value;
-        console.log('updated');
-        console.log(this.data);
-        console.log(this.options);
     },
     mounted() {
         for (const [key, value] of Object.entries(this.options))
             this.data[key] = value.value;
-        console.log('mounted');
-        console.log(this.data);
     }
 }
 

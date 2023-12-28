@@ -1,6 +1,6 @@
 from trisigma.domain.portfolio import PortfolioManager, StrategyAllocation, Exposure, ExposureTable
 from trisigma.domain.brokerage import Order, order_status, FinancialAccount
-from trisigma.domain.trading import Trader, StrategyDefinition, to_strategy_uri
+from trisigma.domain.trading import Trader, StrategyDefinition, to_strategy_uri, from_strategy_uri
 from trisigma.domain.common import modelfactory
 from trisigma.domain.market import Instrument
 from pymongo import MongoClient
@@ -156,6 +156,11 @@ def push_pm(portfolio_manager_id, name, meta=None):
             meta=meta or {})
     _insert("portfolio_manager_id", modelfactory.deconstruct(o))
 
+def push_active_strategies(portfolio_manager_id, active_strategies):
+    _insert("active_strategies", {
+        'portfolio_manager_id': portfolio_manager_id,
+        'active_strategies': active_strategies})
+
 def push_strategy_allocation(portfolio_manager_id, allocation, meta=None):
     _insert("strategy_allocation", {
         'portfolio_manager_id': portfolio_manager_id,
@@ -228,8 +233,12 @@ def main():
     push_account(seed.account_id(1), seed.pm_id(1), "acc2", "IBKR", True)
     push_account(seed.account_id(2), seed.pm_id(1), "acc3", "IBKR", False)
     push_account(seed.account_id(3), seed.pm_id(2), "acc4", "Webull", False)
-    push_strategy_allocation(seed.pm_id(1), {ST1: 0.5, ST2: 0.3, ST3: 0.1})
-    push_strategy_allocation_naming(seed.pm_id(1), {ST1: "first strategy", ST2: "second strategy", ST3: "third strategy"})
+    push_strategy_allocation(seed.pm_id(1), {'some-uuid4-1': 0.5, 'some-uuid4-2': 0.3, 'some-uuid4-3': 0.1})
+    push_active_strategies(seed.pm_id(1), {
+        'some-uuid4-1': {'name': 'MyStrategy1', 'strategy': from_strategy_uri(ST1)[0], 'config': from_strategy_uri(ST1)[1]},
+        'some-uuid4-2': {'name': 'MyStrategy2', 'strategy': from_strategy_uri(ST2)[0], 'config': from_strategy_uri(ST2)[1]},
+        'some-uuid4-3': {'name': 'MyStrategy3', 'strategy': from_strategy_uri(ST3)[0], 'config': from_strategy_uri(ST3)[1]},
+    })
 
     start = datetime(2023, 8, 1)
     end = datetime.now()
@@ -240,10 +249,10 @@ def main():
         account_id = seed.account_id(i-1)
         historic_pos[account_id] = []
         exposure_table = ExposureTable(
-                {ST1:Exposure(alloc={'AAPL': 0.3}, buffer={}),
-                 ST2:Exposure(alloc={'SPY': -1}, buffer={}),
-                 ST3:Exposure(alloc={'TESLA': 1}, buffer={})},
-                {ST1: 0.5, ST2: 0.3, ST3: 0.1})
+                {'some-uuid4-1':Exposure(alloc={'AAPL': 0.3}, buffer={}),
+                 'some-uuid4-2':Exposure(alloc={'SPY': -1}, buffer={}),
+                 'some-uuid4-3':Exposure(alloc={'TESLA': 1}, buffer={})},
+                {'some-uuid4-1': 0.5, 'some-uuid4-2': 0.3, 'some-uuid4-3': 0.1})
         push_exposure_table(account_id=account_id, exposure_table=exposure_table)
         push_trader(account_id, ST1, T2, seed.trader_id(1 + (i-1)*3))
         push_trader(account_id, ST2, T2, seed.trader_id(2 + (i-1)*3))

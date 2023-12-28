@@ -1,6 +1,6 @@
 from trisigma.domain.portfolio import StrategyAllocation, PortfolioRepository
 from trisigma.app.port import AccountManagementPort, TraderManagementPort
-from trisigma.domain.trading import TraderRepository, from_strategy_uri
+from trisigma.domain.trading import TraderRepository, from_strategy_uri, to_strategy_uri
 
 class UpdateStrategyAllocationUseCase:
 
@@ -28,7 +28,9 @@ class UpdateStrategyAllocationUseCase:
                 portfolio_manager_id)
 
         all_traders: list = await self.trader_repo.find_traders(portfolio_manager_id)
-        uris = new_strategy_allocation.keys()
+        uris = [
+                to_strategy_uri(alloc['strategy'], alloc['config'])
+                for alloc in new_strategy_allocation.values()]
 
         to_remove = [(from_strategy_uri(t.strategy_uri)[0], t.trader_id)
                      for t in all_traders if t.strategy_uri not in uris

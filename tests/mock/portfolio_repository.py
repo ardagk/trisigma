@@ -10,15 +10,14 @@ class MockPortfolioRepository(PortfolioRepository):
         self.calls.append(('get_strategy_allocation', (portfolio_manager_id)))
         return statics['allocation_table']
 
-    async def get_strategy_allocation_namings(self, portfolio_manager_id):
-        self.calls.append(('get_strategy_allocation_namings', (portfolio_manager_id)))
-        return statics['allocation_namings']
-
-    async def update_strategy_allocation(self, portfolio_manager_id, strategy_allocation):    
+    async def set_strategy_allocation(self, portfolio_manager_id, strategy_allocation):
         self.calls.append(('update_strategy_allocation', (portfolio_manager_id, strategy_allocation)))
 
-    async def update_strategy_allocation_namings(self, portfolio_manager_id, namings):    
-        self.calls.append(('update_strategy_allocation', (portfolio_manager_id, namings)))
+    async def get_active_strategies(self, portfolio_manager_id: str):
+        return {}
+
+    async def set_active_strategies(self, portfolio_manager_id: str, strategies: dict):
+        pass
 
     async def get_portfolio_position(self, portfolio_manager_id):
         return {}

@@ -54,7 +54,10 @@ async def portfolio_allocation(portfolio_manager_id: int):
     return resp
 
 @app.post('/portfolio/allocation')
-async def portfolio_allocation_post(portfolio_manager_id: int, strategy_allocation: Dict):
+async def portfolio_allocation_post(body: Dict):
+    portfolio_manager_id = body.get('portfolio_manager_id')
+    strategy_allocation = body.get('allocation')
+    assert isinstance(portfolio_manager_id, int) and isinstance(strategy_allocation, dict)
     usecase = UpdateStrategyAllocationUseCase(
             portfolio_repository = portfolio_repo,
             trader_repository = trader_repo,

@@ -11,5 +11,10 @@ class GetStrategyAllocationUseCase:
     async def run(self, portfolio_manager_id) -> dict:
         alloc = await self.portfolio_repo.get_strategy_allocation(
                 portfolio_manager_id)
-        return dict(alloc)
+        details = await self.portfolio_repo.get_active_strategies(
+                portfolio_manager_id)
+        result = {}
+        for key, value in alloc.items():
+            result[key] = {'allocation': value, **details[key]}
+        return result
 

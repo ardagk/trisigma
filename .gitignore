@@ -4,4 +4,5 @@ dist/
 build/
 */did.bin
 clients/pms/node_modules/
+clients/pms/out/
 pyrightconfig.json

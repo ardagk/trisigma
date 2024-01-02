@@ -3,4 +3,5 @@ trisigma.egg-info/
 dist/
 build/
 */did.bin
+clients/pms/node_modules/
 pyrightconfig.json

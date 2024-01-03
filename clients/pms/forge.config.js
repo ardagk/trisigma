@@ -1,6 +1,7 @@
 module.exports = {
   packagerConfig: {
     asar: true,
+    icon: 'media/icon/icon',
   },
   rebuildConfig: {},
   makers: [
@@ -10,7 +11,7 @@ module.exports = {
     },
     {
       name: '@electron-forge/maker-zip',
-      platforms: ['darwin'],
+      config: {},
     },
     {
       name: '@electron-forge/maker-deb',
@@ -19,6 +20,14 @@ module.exports = {
     {
       name: '@electron-forge/maker-rpm',
       config: {},
+    },
+    {
+      // Path to the icon to use for the app in the DMG window
+      name: '@electron-forge/maker-dmg',
+      platforms: ['darwin'],
+      config: {
+        icon: 'media/icon/icon.icns',
+      }
     },
   ],
   publishers: [
@@ -29,7 +38,7 @@ module.exports = {
           owner: 'ardagk',
           name: 'trisigma'
         },
-        prerelease: false,
+        prerelease: true,
         draft: true
       }
     }

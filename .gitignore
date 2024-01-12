@@ -2,7 +2,9 @@ __pycache__/
 trisigma.egg-info/
 dist/
 build/
-*/did.bin
+**/did.bin
 clients/pms/node_modules/
 clients/pms/out/
 pyrightconfig.json
+**/.DS_Store
+

@@ -23,7 +23,7 @@ export const AllocatorView = {
             </div>
             <div v-else class="fw rowflex justify-content-center" style="flex-basis: 8%;">
                 <button class="flexitem" type="button" @click="onNewStrategy" style="font-size: 1.3em; flex-basis: 70%;\
-                 flex-grow: 0; margin-top: 10px">Lorem ipsum dolor</button>
+                 flex-grow: 0; margin-top: 10px">Add New Strategy</button>
             </div>
             <div class="rowflex justify-content-end fw padding-bottom: 20px;">
                 <button type="button" @click="saveStrategyAllocation" style="font-size: 1.3em">Save</button>
